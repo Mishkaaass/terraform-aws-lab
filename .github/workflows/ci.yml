@@ -58,3 +58,61 @@ jobs:
           format: table
           exit-code: '1'
           hide-progress: true
+
+  local-api-integration:
+    name: Floci AWS API integration (apply / verify / destroy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Verify local-only prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -z "${AWS_ACCESS_KEY_ID:-}"
+          test -z "${AWS_SECRET_ACCESS_KEY:-}"
+          docker compose config --quiet
+          bash scripts/check.sh
+          aws --version
+      - name: Boot free local AWS API emulator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose up -d floci
+          bash scripts/wait-floci.sh
+      - name: Terraform plan and apply (Floci only; no cloud credentials)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          terraform -chdir=environments/floci init -input=false -lockfile=readonly
+          terraform -chdir=environments/floci plan -input=false -out="${RUNNER_TEMP}/floci.tfplan"
+          terraform -chdir=environments/floci apply -input=false "${RUNNER_TEMP}/floci.tfplan"
+      - name: Verify AWS API, resources and idempotency
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(terraform -chdir=environments/floci output -raw instance_count)" = "0"
+          bash scripts/verify-local.sh
+          echo '=== EXPECTED: No changes ==='
+          terraform -chdir=environments/floci plan -input=false -no-color -detailed-exitcode | tail -n 14
+          echo '[PASS] Applied infrastructure matches the desired configuration.'
+      - name: Destroy emulated resources and verify empty state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          terraform -chdir=environments/floci destroy -input=false -auto-approve -no-color | tail -n 15
+          test -z "$(terraform -chdir=environments/floci state list)"
+          echo '[PASS] No managed resources remain in ephemeral state.'
+      - name: Always stop disposable emulator
+        if: ${{ always() }}
+        run: docker compose down -v --remove-orphans
