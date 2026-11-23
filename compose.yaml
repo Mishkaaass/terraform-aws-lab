@@ -1,0 +1,11 @@
+services:
+  floci:
+    image: floci/floci:latest  # Pin digest for long-lived CI releases.
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      FLOCI_SERVICES_UI_ENABLED: "false"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # Do NOT mount docker.sock. EC2 is plan-tested via mocked provider by default.

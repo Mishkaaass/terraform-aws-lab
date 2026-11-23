@@ -1,0 +1,5 @@
+# Never commit your real terraform.tfvars or credentials.
+expected_account_id = "123456789012" # replace with your own AWS account ID
+aws_region          = "us-east-1"
+project_name        = "terraform-aws-lab"
+enable_compute      = false # private EC2 requires explicit secure-connectivity design
