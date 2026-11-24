@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+/* Offline-first: system fonts only. No third-party asset requests. */
 :root{color-scheme:dark;--bg:#090e12;--side:#0d1419;--panel:#111b21;--panel2:#142029;--edge:#25343c;--edge2:#314651;--fg:#e8f2f3;--muted:#93a5ad;--quiet:#70838e;--teal:#5bdfc0;--aqua:#a2e8d9;--amber:#ffcc87;--red:#ff9e9c;--mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;--sans:'DM Sans',Inter,system-ui,sans-serif}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 var(--sans)}
