@@ -65,13 +65,22 @@ class LabHandler(SimpleHTTPRequestHandler):
             return False
         return True
 
-    def do_GET(self) -> None:
-        if self._authorized_path():
+    def _serve_static(self, *, send_body: bool) -> None:
+        if not self._authorized_path():
+            return
+        # Never delegate "/" to SimpleHTTPRequestHandler's directory listing.
+        if self.path == "/":
+            self.path = "/index.html"
+        if send_body:
             super().do_GET()
+        else:
+            super().do_HEAD()
+
+    def do_GET(self) -> None:
+        self._serve_static(send_body=True)
 
     def do_HEAD(self) -> None:
-        if self._authorized_path():
-            super().do_HEAD()
+        self._serve_static(send_body=False)
 
     def log_message(self, fmt: str, *args: object) -> None:
         # Do not write raw URL paths or request headers to the terminal.
