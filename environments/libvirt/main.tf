@@ -98,10 +98,11 @@ resource "libvirt_domain" "vm" {
   devices = {
     disks = [
       {
+        # File reference lets virt-aa-helper discover the qcow2 backing chain
+        # and allow AppArmor access to the Ubuntu base image.
         source = {
-          volume = {
-            pool   = libvirt_volume.root.pool
-            volume = libvirt_volume.root.name
+          file = {
+            file = libvirt_volume.root.path
           }
         }
         target = {
