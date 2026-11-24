@@ -96,6 +96,26 @@ resource "libvirt_domain" "vm" {
   }
 
   devices = {
+    # Recovery display: visible even before the guest network or SSH works.
+    # Bind VNC to host loopback only; do not expose a management console to LAN.
+    graphics = [
+      {
+        vnc = {
+          auto_port = true
+          listen    = "127.0.0.1"
+        }
+      }
+    ]
+
+    videos = [
+      {
+        model = {
+          type    = "vga"
+          primary = "yes"
+        }
+      }
+    ]
+
     disks = [
       {
         # File reference lets virt-aa-helper discover the qcow2 backing chain
