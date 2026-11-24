@@ -7,7 +7,6 @@ This process has no AWS, Docker or libvirt privileges and never runs commands.
 from __future__ import annotations
 
 import argparse
-from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
