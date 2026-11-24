@@ -115,10 +115,11 @@ resource "libvirt_domain" "vm" {
       },
       {
         device = "cdrom"
+        # Refer directly to the seed ISO so the guest's AppArmor profile
+        # includes it, just as with the root qcow2 disk.
         source = {
-          volume = {
-            pool   = libvirt_volume.seed.pool
-            volume = libvirt_volume.seed.name
+          file = {
+            file = libvirt_volume.seed.path
           }
         }
         target = {
