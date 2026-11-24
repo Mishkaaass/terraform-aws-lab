@@ -32,6 +32,16 @@ The simulator contains recorded evidence and design exercises. It does not probe
 
 **How to learn rather than memorize:** For each question, state a hypothesis aloud before selecting an answer; compare your prediction with the stored evidence; inspect the linked exact source file; write a *fresh explanation* in the debrief without copying the provided text. Try again later and explain the wrong choices too. An earned point is not a substitute for explanation.
 
+## Read-only host security preflight
+
+From the repository root, check relevant local listeners and verify that the UI server does not serve repository metadata or local state:
+
+```bash
+bash engineering-lab/security-preflight.sh
+```
+
+This reads local socket metadata and performs loopback HTTP requests while **discarding all response bodies**. It does not use sudo, print secrets, alter firewall rules, run Docker or touch the VM. It cannot certify the host or other programs.
+
 ## Optional real, read-only validation on the lab owner's laptop
 
 The browser does **not** run these commands. If the local KVM VM is up and you have appropriate host access, these are representative manual checks:
