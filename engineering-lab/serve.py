@@ -63,6 +63,12 @@ class LabHandler(SimpleHTTPRequestHandler):
         if parsed.path not in PUBLIC_FILES or parsed.query or parsed.fragment:
             self.send_error(HTTPStatus.NOT_FOUND, "Not a public lab asset")
             return False
+        # File allowlisting is not enough if a local symlink points outside the UI.
+        name = "/index.html" if parsed.path == "/" else parsed.path
+        asset = ROOT / name.lstrip("/")
+        if asset.is_symlink() or not asset.is_file() or asset.resolve().parent != ROOT:
+            self.send_error(HTTPStatus.NOT_FOUND, "Missing or unsafe asset")
+            return False
         return True
 
     def _serve_static(self, *, send_body: bool) -> None:
