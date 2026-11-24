@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="A hands-on engineering decision simulator using real Terraform, KVM and cloud infrastructure evidence.">
+<title>Infrastructure Failure Lab — Terraform Portfolio</title>
+<link rel="stylesheet" href="./style.css">
+<script src="./app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#mission">Skip to engineering lab</a>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">I<span>.</span></div><div><strong>INFRASTRUCTURE LAB</strong><small>TERRAFORM / ENGINEERING</small></div></div>
+    <div class="rail-heading">SYSTEM STATUS</div>
+    <div class="status-card"><span class="status-pulse"></span><div><strong>Training environment</strong><span>Offline · non-executing</span></div></div>
+    <div class="rail-heading mission-label">MISSION CONTROL</div>
+    <nav id="mission-nav" aria-label="Engineering scenarios"></nav>
+    <div class="rail-foot">
+      <div class="rail-heading">REVIEWER MODE</div>
+      <p>Decide before seeing the answer. Explanations and evidence only unlock after an attempt.</p>
+      <a href="../README.md" class="small-link">Project documentation ↗</a>
+    </div>
+  </aside>
+  <main id="mission" class="main">
+    <header class="topbar"><div class="crumb">PORTFOLIO / <strong>ENGINEERING DOJO</strong></div><div class="top-actions"><span class="static-pill">NO AWS CREDENTIALS</span><button id="reset-all" class="text-button" type="button">↺ Reset session</button></div></header>
+    <div class="content">
+      <section class="heading-block"><div class="eyebrow">INTERACTIVE INFRASTRUCTURE TRAINING <span>—</span> REV 01</div><div class="title-row"><div><h1>Failure is the <em>curriculum.</em></h1><p>Observe. Form a hypothesis. Choose the safest action. Verify the outcome.</p></div><div class="scoreboard"><span>SESSION SCORE</span><strong id="score">00<span class="score-denom">/21</span></strong><div id="progress-text">0 of 21 decisions completed</div></div></div></section>
+      <section class="warning" id="sim-disclosure" role="note"></section>
+      <div class="work-layout">
+        <section class="scenario-panel">
+          <div class="panel-top"><div><span id="scenario-index" class="mono-tag">INCIDENT 01 / 07</span> <span id="scenario-type" class="type-tag">REAL INCIDENT REPLAY</span></div><span id="impact" class="impact">PROVISIONING BLOCKED</span></div>
+          <div class="scenario-body"><div class="track" id="track"></div><h2 id="scenario-title"></h2><p id="scenario-story"></p><div class="phase-line"><span id="phase-number">01 / 03</span><div id="phase-steps" class="steps"></div></div>
+            <div id="challenge" class="challenge"><div class="challenge-kicker" id="challenge-stage"></div><h3 id="question"></h3><div id="options" class="options"></div><div id="feedback" class="feedback" hidden></div><div class="challenge-actions"><button id="hint-btn" class="ghost" type="button">Show thinking hint</button><button id="next-btn" class="primary" type="button" disabled>Next decision <span aria-hidden="true">→</span></button></div><div id="hint" class="hint" hidden></div></div>
+            <section id="debrief" class="debrief" hidden><div class="challenge-kicker">ENGINEERING DEBRIEF</div><h3>What would you say in an interview?</h3><p id="debrief-text"></p><label for="reflection">Explain the root cause, decision, and independent proof in your own words:</label><textarea id="reflection" rows="5" placeholder="I first observed... My hypothesis was... I rejected... I would verify by..."></textarea><div class="debrief-actions"><button class="ghost" id="copy-notes" type="button">Copy my review notes</button><button class="primary" id="next-mission" type="button">Next mission →</button></div><div id="copied" class="inline-note" role="status"></div></section>
+          </div>
+        </section>
+        <aside class="evidence-column">
+          <section class="evidence-panel"><div class="section-header"><span>OBSERVABILITY</span><span class="tiny-live">RECORDED</span></div><h3>Evidence locker</h3><p class="section-intro">Source-based snapshots, not live telemetry. Inspect both layers before choosing.</p><div id="evidence"></div></section>
+          <section class="evidence-panel sources"><div class="section-header"><span>SOURCE OF TRUTH</span><span>GITHUB</span></div><h3>Verify in code</h3><div id="source-list"></div><p class="micro">Links open repository source. Answers cite the actual project files, not invented runtime telemetry.</p></section>
+          <section class="evidence-panel proof-panel"><div class="section-header"><span>LAB PROTOCOL</span><span>READ-ONLY UI</span></div><div class="protocol-row"><span>01</span><div><strong>Inspect</strong><small>Find the failing layer.</small></div></div><div class="protocol-row"><span>02</span><div><strong>Decide</strong><small>Choose the smallest justified intervention.</small></div></div><div class="protocol-row"><span>03</span><div><strong>Prove</strong><small>Match claim to independent evidence.</small></div></div></section>
+        </aside>
+      </div>
+      <footer>INFRASTRUCTURE FAILURE LAB <span>•</span> Simulations never run shell commands, mutate Terraform state, or contact AWS. <span>•</span> Built from documented project evidence.</footer>
+    </div>
+  </main>
+</div>
+<div id="fatal" class="fatal" role="alert" hidden></div>
+</body>
+</html>
