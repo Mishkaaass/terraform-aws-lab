@@ -38,8 +38,10 @@ jobs:
         run: terraform -chdir=environments/aws validate -no-color
       - name: Local safety check
         run: bash scripts/check.sh
-      - name: Engineering Dojo content and source-reference contract
-        run: python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v
+      - name: Engineering Dojo content, static HTTP security and source-reference tests
+        run: |
+          bash -n engineering-lab/security-preflight.sh
+          python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v
 
   iac-security:
     name: Trivy IaC security scan
