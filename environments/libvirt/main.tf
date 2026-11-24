@@ -96,6 +96,27 @@ resource "libvirt_domain" "vm" {
   }
 
   devices = {
+    # Ubuntu cloud images use ttyS0 during boot. Provide an emulated
+    # serial port and a host PTY console so virsh console can reveal
+    # early boot errors even when networking and SSH are unavailable.
+    serials = [
+      {
+        target = {
+          type = "isa-serial"
+          port = 0
+        }
+      }
+    ]
+
+    consoles = [
+      {
+        target = {
+          type = "serial"
+          port = 0
+        }
+      }
+    ]
+
     # Recovery display: visible even before the guest network or SSH works.
     # Bind VNC to host loopback only; do not expose a management console to LAN.
     graphics = [
