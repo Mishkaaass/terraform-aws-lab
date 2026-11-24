@@ -1,12 +1,25 @@
-# Separate state from AWS and Floci. Uses only the already-existing libvirt "default"
-# network and storage pool; no host bridges, firewall, DNS or existing VMs are edited.
+# Separate state from AWS and Floci. Owns only a dedicated VM storage pool.
+# Reuses existing "default" libvirt NAT network; never changes host routing/firewalls.
 locals {
   vm_name = var.vm_name
 }
 
+resource "libvirt_pool" "lab" {
+  name = "tfaws-lab"
+  type = "dir"
+
+  target = {
+    path = "/var/lib/libvirt/images/tfaws-lab"
+  }
+
+  create = {
+    autostart = false
+  }
+}
+
 resource "libvirt_volume" "ubuntu_base" {
   name = "${local.vm_name}-ubuntu2404-base.qcow2"
-  pool = "default"
+  pool = libvirt_pool.lab.name
   target = {
     format = {
       type = "qcow2"
@@ -22,7 +35,7 @@ resource "libvirt_volume" "ubuntu_base" {
 
 resource "libvirt_volume" "root" {
   name     = "${local.vm_name}-root.qcow2"
-  pool     = "default"
+  pool = libvirt_pool.lab.name
   capacity = 8 * 1024 * 1024 * 1024
   target = {
     format = {
@@ -53,7 +66,7 @@ resource "libvirt_cloudinit_disk" "seed" {
 
 resource "libvirt_volume" "seed" {
   name = "${local.vm_name}-cloudinit.iso"
-  pool = "default"
+  pool = libvirt_pool.lab.name
 
   create = {
     content = {
