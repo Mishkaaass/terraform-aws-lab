@@ -251,7 +251,8 @@
       "paths": [
         "environments/floci/provider.tf",
         "docs/SECURITY.md",
-        "compose.yaml"
+        "compose.yaml",
+        "environments/aws/provider.tf"
       ],
       "phases": [
         {
@@ -327,7 +328,9 @@
       "paths": [
         "modules/network/main.tf",
         "modules/identity/main.tf",
-        "modules/compute/main.tf"
+        "modules/compute/main.tf",
+        "docs/ARCHITECTURE.md",
+        "docs/AWS_RUNBOOK.md"
       ],
       "phases": [
         {
@@ -477,7 +480,8 @@
       ],
       "paths": [
         ".github/workflows/ci.yml",
-        "docs/LOCAL_VM.md"
+        "docs/LOCAL_VM.md",
+        "docs/SECURITY.md"
       ],
       "phases": [
         {
