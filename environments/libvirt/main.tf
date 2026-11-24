@@ -92,7 +92,10 @@ resource "libvirt_domain" "vm" {
   os = {
     type         = "hvm"
     type_arch    = "x86_64"
-    type_machine = "q35"
+    # Use legacy PCI (i440fx) on this local lab: q35 PCIe root ports
+    # left VirtIO disk/network devices inaccessible in Ubuntu initramfs.
+    # This changes only VM chipset topology, not Terraform-managed volumes.
+    type_machine = "pc"
   }
 
   devices = {
