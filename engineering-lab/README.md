@@ -11,12 +11,12 @@ Requirements: Python 3, a browser and this repository. **No AWS account, Terrafo
 From the repository root:
 
 ```bash
-python3 -m http.server 8765 --bind 127.0.0.1
+python3 engineering-lab/serve.py
 ```
 
-Open **http://127.0.0.1:8765/engineering-lab/**. Stop the local server with Ctrl+C.
+Open **http://127.0.0.1:8765/**. Stop the local server with Ctrl+C.
 
-The simulator contains recorded evidence and design exercises. It does not probe a running VM, use credentials, execute shell commands, change state, persist progress or call an external server. Decisions and reflection text live in page memory until reset/reload. It uses local CSS/JS/JSON with no third-party assets.
+The simulator contains recorded evidence and design exercises. It does not probe a running VM, use credentials, execute shell commands, change state, persist progress or call an external server. Decisions and reflection text live in page memory until reset/reload. It uses local CSS/JS/JSON with no third-party assets. **Never serve the repository root with a general-purpose HTTP server**: it may expose hidden Git metadata or local Terraform state. The dedicated web server only serves four allowlisted UI assets, and rejects all other paths.
 
 ## Missions
 
