@@ -1,0 +1,61 @@
+#cloud-config
+hostname: tfaws-lab01
+manage_etc_hosts: true
+disable_root: true
+ssh_pwauth: false
+users:
+  - name: devops
+    gecos: Terraform libvirt lab operator
+    groups: [sudo]
+    shell: /bin/bash
+    lock_passwd: true
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+write_files:
+  - path: /usr/local/bin/lab-health.py
+    owner: root:root
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env python3
+      from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+      class Handler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path != "/health":
+                  self.send_error(404)
+                  return
+              body = b'{"status":"ok","service":"terraform-libvirt-lab"}\n'
+              self.send_response(200)
+              self.send_header("Content-Type", "application/json")
+              self.send_header("Content-Length", str(len(body)))
+              self.end_headers()
+              self.wfile.write(body)
+
+      ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+  - path: /etc/systemd/system/lab-health.service
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Terraform lab HTTP health endpoint
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      User=nobody
+      ExecStart=/usr/bin/python3 /usr/local/bin/lab-health.py
+      Restart=on-failure
+      RestartSec=2
+      NoNewPrivileges=true
+      PrivateTmp=true
+      ProtectSystem=strict
+      ProtectHome=true
+
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, lab-health.service]
+final_message: "Terraform lab cloud-init completed."

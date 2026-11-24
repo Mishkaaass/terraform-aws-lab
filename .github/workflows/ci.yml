@@ -135,3 +135,37 @@ jobs:
       - name: Always stop disposable emulator
         if: ${{ always() }}
         run: docker compose down -v --remove-orphans
+
+
+  libvirt-static:
+    name: Local Linux VM / Terraform validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1 pinned SHA
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Terraform format
+        run: terraform fmt -check -recursive environments/libvirt
+      - name: Terraform init without backend
+        run: terraform -chdir=environments/libvirt init -backend=false -input=false
+      - name: Terraform validate (no VM creation)
+        run: terraform -chdir=environments/libvirt validate -no-color
+      - name: Verify guarded VM defaults and cloud-init
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -q 'default     = 1536' environments/libvirt/variables.tf
+          grep -q 'autostart   = false' environments/libvirt/main.tf
+          grep -q 'ssh_pwauth: false' environments/libvirt/cloud-init.yaml.tftpl
+          grep -q 'lock_passwd: true' environments/libvirt/cloud-init.yaml.tftpl
+          grep -q 'network = "default"' environments/libvirt/main.tf
+          echo '[PASS] Local VM defaults and key-only SSH present'
