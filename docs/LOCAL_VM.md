@@ -79,6 +79,33 @@ Expected: VM running, `cloud-init` completed, `lab-health` active, JSON `status=
 
 **Cleanup only with deliberate approval:** `terraform -chdir=environments/libvirt destroy` shows what will be deleted and prompts before removing *only the Terraform-managed VM and volumes*. It is destructive to this guest's data. The pool's backing directory is deliberately not deleted by Terraform. It must never run automatically from CI.
 
+## Real guest validation and troubleshooting
+
+The laptop runtime exercise was verified on Ubuntu 24.04.5: libvirt domain running,
+guest DHCP assigned, SSH as `devops` using the lab key, `cloud-init status` = `done`,
+`lab-health.service` = `active`, the HTTP `/health` response returned
+`{"status":"ok","service":"terraform-libvirt-lab"}` from both guest and host,
+and a subsequent `terraform plan` reported **No changes**.
+
+If the VM appears to run but **has no DHCP lease**, check guest boot *before*
+changing host networking. The VNC display is bound to `127.0.0.1` and a serial
+console is available via `virsh -c qemu:///system console tfaws-lab01`
+(exit with **Ctrl+]**). In this lab, an initial `q35` machine configuration
+exposed VirtIO PCI devices but the guest reported `D3cold to D0` failures,
+could not detect `/dev/vda`, and dropped to initramfs with
+`LABEL=cloudimg-rootfs does not exist`. Switching **only** the VM chipset to
+`pc` (i440fx PCI) allowed the guest to boot, obtain DHCP, and start cloud-init.
+This is a host-specific compatibility observation, **not** a general rule that
+`q35` is broken. Do not delete/recreate disks while diagnosing it.
+
+On this Ubuntu host, QEMU's AppArmor profile initially blocked the root
+qcow2 backing image and then the cloud-init ISO when the domain referenced
+them as `source.volume`. Using direct `source.file` paths for the domain
+disks allowed libvirt to grant access without disabling AppArmor.
+
+A successful CI `fmt`/`validate` job proves static Terraform correctness;
+the real VM boot, SSH and HTTP checks above must be performed on a KVM host.
+
 ## What CI proves vs what only your laptop proves
 
 CI runs `terraform fmt` and `terraform validate` without needing `/dev/kvm`. Your laptop then proves real OS boot, DHCP, SSH and systemd via runtime commands. This separation is deliberate.
