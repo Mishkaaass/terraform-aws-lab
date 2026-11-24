@@ -33,10 +33,10 @@ flowchart TB
 Run from the repository root with no AWS account, Docker, Terraform, KVM or admin access:
 
 ```bash
-python3 -m http.server 8765 --bind 127.0.0.1
+python3 engineering-lab/serve.py
 ```
 
-Open **http://127.0.0.1:8765/engineering-lab/**. The browser runs no shell commands, uses no credentials, and does **not** claim simulated signals are live. For optional real inspection or drift exercises, see [the learning guide](engineering-lab/README.md).
+Open **http://127.0.0.1:8765/**. The browser runs no shell commands, uses no credentials, and does **not** claim simulated signals are live. For optional real inspection or drift exercises, see [the learning guide](engineering-lab/README.md).
 
 ## Quick start: no AWS account needed
 
