@@ -15,6 +15,11 @@ resource "libvirt_pool" "lab" {
   create = {
     autostart = false
   }
+
+  # Delete volumes explicitly before removing the pool; keep the directory safe.
+  destroy = {
+    delete = false
+  }
 }
 
 resource "libvirt_volume" "ubuntu_base" {
@@ -35,7 +40,7 @@ resource "libvirt_volume" "ubuntu_base" {
 
 resource "libvirt_volume" "root" {
   name     = "${local.vm_name}-root.qcow2"
-  pool = libvirt_pool.lab.name
+  pool     = libvirt_pool.lab.name
   capacity = 8 * 1024 * 1024 * 1024
   target = {
     format = {
