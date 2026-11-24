@@ -26,6 +26,18 @@ flowchart TB
   EC2 --> HARD[No SSH / no public IP / IMDSv2 / EBS encryption]
 ```
 
+## Interactive Engineering Dojo — 21 decisions, 7 incidents
+
+**[Launch the reviewer-facing failure lab](engineering-lab/README.md)**. A free local browser simulator with recorded incident evidence, fault diagnosis, competing remediation choices, engineering explanations, source-code proofs, a score and self-written incident reviews. Includes the actual KVM PCI/VirtIO and AppArmor debugging incidents, a safe Floci drift drill, IAM/network reasoning and CI evidence triage.
+
+Run from the repository root with no AWS account, Docker, Terraform, KVM or admin access:
+
+```bash
+python3 -m http.server 8765 --bind 127.0.0.1
+```
+
+Open **http://127.0.0.1:8765/engineering-lab/**. The browser runs no shell commands, uses no credentials, and does **not** claim simulated signals are live. For optional real inspection or drift exercises, see [the learning guide](engineering-lab/README.md).
+
 ## Quick start: no AWS account needed
 
 Requirements: Terraform **1.17.2** (HashiCorp), Docker + Docker Compose v2, and optionally AWS CLI v2 for API inspection.
