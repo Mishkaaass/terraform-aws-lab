@@ -52,6 +52,10 @@ class EngineeringLabContract(unittest.TestCase):
         self.assertNotIn("https://fonts", css)
         self.assertIn("non-executing", js)
         self.assertIn('id="reflection"', html)
+        serve = (LAB / "serve.py").read_text(encoding="utf-8")
+        self.assertIn("127.0.0.1", serve)
+        self.assertIn("PUBLIC_FILES", serve)
+        self.assertIn("Content-Security-Policy", serve)
 
     def test_repository_fixtures_are_simulations(self) -> None:
         self.assertIn("simulator", MISSIONS["disclosure"].lower())
