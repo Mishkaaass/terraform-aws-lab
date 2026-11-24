@@ -2,7 +2,7 @@
 
 This lab creates **one Ubuntu 24.04 LTS guest** using KVM/QEMU/libvirt. It does not touch AWS, Floci, Docker or any other repository. The guest is **1536 MiB RAM, 2 vCPUs, an 8 GiB sparse root disk**, cloud-init SSH-public-key login, and a systemd-managed Python /health endpoint.
 
-**Boundaries:** Existing libvirt network `default` uses NAT and may permit guest internet egress; this is *not* a fully isolated production network. No new bridges, firewall policies, default routes or services on the host are modified. The default libvirt storage pool must already exist and be active. No cloud charges.
+**Boundaries:** Existing libvirt network `default` uses NAT and may permit guest internet egress; this is *not* a fully isolated production network. No new bridges, firewall policies, default routes or services on the host are modified. Terraform creates its own project storage pool `tfaws-lab` under `/var/lib/libvirt/images/tfaws-lab`; the existing `default` pool is not required. No cloud charges.
 
 ## Host preflight (read-only)
 
@@ -11,11 +11,11 @@ sudo timeout 10s virsh -c qemu:///system list --all
 sudo timeout 10s virsh -c qemu:///system net-list --all
 sudo timeout 10s virsh -c qemu:///system pool-list --all
 sudo timeout 10s virsh -c qemu:///system dominfo tfaws-lab01 || true
-sudo timeout 10s virsh -c qemu:///system vol-list default | grep -E 'tfaws-lab01-' || true
+sudo timeout 10s virsh -c qemu:///system pool-info tfaws-lab || true
 id -nG
 ```
 
-Stop if the proposed domain name `tfaws-lab01` or its volumes already exist outside this Terraform state. Reuse the existing `default` pool/network; if the pool is inactive, diagnose before continuing.
+Stop if the proposed domain `tfaws-lab01` or pool `tfaws-lab` already exists outside Terraform state. The Terraform pool is separate; only the existing **network** `default` is reused.
 
 **Provider permissions:** Running Terraform against `qemu:///system` requires permission to the libvirt system socket. On a personal dev laptop, membership of the `libvirt` group is conventional but **grants privileged virtualization management access**. If you deliberately accept this, run `sudo usermod -aG libvirt "$USER"`, then log out/in (or start a new group-enabled login session). Test `virsh -c qemu:///system list --all` *without sudo*. Do not run `sudo terraform` (it would create root-owned state and mix credentials).
 
@@ -77,7 +77,7 @@ terraform -chdir=environments/libvirt plan -input=false
 
 Expected: VM running, `cloud-init` completed, `lab-health` active, JSON `status=ok`, and a second plan showing no changes.
 
-**Cleanup only with deliberate approval:** `terraform -chdir=environments/libvirt destroy` shows what will be deleted and prompts before removing *only the Terraform-managed VM and volumes*. It is destructive to this guest's data. It must never run automatically from CI.
+**Cleanup only with deliberate approval:** `terraform -chdir=environments/libvirt destroy` shows what will be deleted and prompts before removing *only the Terraform-managed VM and volumes*. It is destructive to this guest's data. The pool's backing directory is deliberately not deleted by Terraform. It must never run automatically from CI.
 
 ## What CI proves vs what only your laptop proves
 
