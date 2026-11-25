@@ -133,7 +133,7 @@ def main() -> int:
                 return 0
             parser.exit(
                 1, f"[BLOCK] Port {args.port} is used by another service. "
-                f"Inspect the listener or try: make studio PORT={args.port + 1}\n"
+                f"Inspect the listener or try: python3 engineering-lab/serve.py --port {args.port + 1}\n"
             )
         parser.exit(1, f"Unable to bind the local server: {error}\n")
     except KeyboardInterrupt:
