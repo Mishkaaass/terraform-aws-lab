@@ -3,17 +3,27 @@
 
 Terraform describes *what should exist*; Floci emulates AWS APIs locally; the browser Studio teaches *why each part exists*. You can understand the architecture **without an AWS account or Docker**. The optional hands-on lab creates actual **emulated API resources**, not production AWS infrastructure.
 
-## Start in 60 seconds
+## Start in 60 seconds — choose one
 
-**Requirements:** Git, Python 3 and a browser. No account, credentials or admin access.
+**Recommended: project-local Python `.venv`.** Requirements: Python **3.11+** with `venv` support, Git, Make and a browser. **No AWS account, Docker or Python package downloads needed** to explore.
 
 ```bash
 git clone https://github.com/Mishkaaass/terraform-aws-lab.git
 cd terraform-aws-lab
-make studio
+make requirements      # see required vs optional tools; read-only
+make setup             # creates/reuses .venv (NO external Python packages)
+make studio            # launches using .venv/bin/python
 ```
 
-Open **http://127.0.0.1:8765/**. Keep the terminal running; stop with `Ctrl+C`. Re-running `make studio` recognizes an existing healthy Studio and displays the URL instead of failing. If an unrelated app occupies the port, the command explains how to choose another port.
+Open **http://127.0.0.1:8765/**; stop with `Ctrl+C`. `make studio` also runs setup automatically and reuses an already-running Studio. **Never use `sudo pip` or install dependencies into system Python.** `requirements.txt` intentionally lists **zero third-party packages** because this UI uses only the Python standard library.
+
+**Alternative: Docker browser-only UI**, if Docker Engine/Desktop and Compose are already installed:
+
+```bash
+make studio-docker      # same UI, isolated image; no .venv required
+```
+
+Both serve on **127.0.0.1:8765**; run only one at a time. The Docker image contains only public UI assets, with no repository state or credentials. It does **not** run Terraform or Floci automatically. For a beginner-friendly comparison and OS-specific prerequisites, see **[RUN REQUIREMENTS](docs/REQUIREMENTS.md)**.
 
 **First visit — follow the tabs in order:**
 
@@ -59,7 +69,7 @@ The default local deployment **does not run an EC2 instance** and does not mount
 
 ## Hands-on local lab (optional, no AWS account)
 
-In a **second terminal** in this repository:
+In a **second terminal** in this repository, after reviewing [RUN REQUIREMENTS](docs/REQUIREMENTS.md). Terraform, Docker and AWS CLI are **external executables**, not Python packages installed in `.venv`:
 
 ```bash
 make doctor          # READ ONLY: see what is installed, working and missing
@@ -101,6 +111,6 @@ docs/                  Detailed architecture, VM guide and AWS safety runbook
 
 Real AWS deployment is **not part of this quick start**. It requires a separate sandbox account, account-ID verification, cost controls and deliberate approval; read [AWS_RUNBOOK.md](docs/AWS_RUNBOOK.md) first. No CI job deploys to real AWS.
 
-For deeper explanations, see the [Studio guide](engineering-lab/README.md), [architecture decisions](docs/ARCHITECTURE.md), [optional Ubuntu VM](docs/LOCAL_VM.md) and [security model](docs/SECURITY.md).
+For deeper explanations, see [RUN REQUIREMENTS](docs/REQUIREMENTS.md), the [Studio guide](engineering-lab/README.md), [architecture decisions](docs/ARCHITECTURE.md), [optional Ubuntu VM](docs/LOCAL_VM.md) and [security model](docs/SECURITY.md).
 
 **Review criterion:** Can a new engineer explain why the private subnet has no internet path, distinguish IAM from connectivity, run the mock tests, verify emulated resources, and diagnose drift **without ever touching production AWS**?
