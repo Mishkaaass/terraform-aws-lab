@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import re
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -50,7 +49,7 @@ class EngineeringLabContract(unittest.TestCase):
         self.assertNotIn("localStorage", js)
         self.assertNotIn("@import", css)
         self.assertNotIn("https://fonts", css)
-        self.assertIn("non-executing", js)
+        self.assertIn("non-executing", js)\n        self.assertIn("DESIGN SANDBOX", html)\n        self.assertIn("SYSTEM MAP", html)\n        self.assertIn("RUN THE REAL LAB", html)\n        self.assertIn("INCIDENT CASES", html)\n        self.assertIn("INSPECT EVIDENCE", html)\n        self.assertIn("renderTopology", js)\n        self.assertIn("renderDesign", js)\n        self.assertIn("inspectProbe", js)
         self.assertIn('id="reflection"', html)
         serve = (LAB / "serve.py").read_text(encoding="utf-8")
         self.assertIn("127.0.0.1", serve)
