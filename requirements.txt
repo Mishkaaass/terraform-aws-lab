@@ -1,0 +1,4 @@
+# Infrastructure Studio runtime: ZERO third-party Python packages.
+# Python >= 3.11 standard library is sufficient; there is nothing to pip-install.
+# Terraform, AWS CLI and Docker are external tools for optional hands-on labs;
+# they are NOT Python packages and are not installed into .venv.
