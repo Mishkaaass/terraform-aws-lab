@@ -43,6 +43,7 @@ jobs:
           bash -n engineering-lab/security-preflight.sh
           bash -n engineering-lab/doctor.sh
           python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v
+          python3 -m unittest discover -s scripts -p 'test_*.py' -v
 
   iac-security:
     name: Trivy IaC security scan
@@ -130,6 +131,13 @@ jobs:
           echo '=== EXPECTED: No changes ==='
           terraform -chdir=environments/floci plan -input=false -no-color -detailed-exitcode | tail -n 14
           echo '[PASS] Applied infrastructure matches the desired configuration.'
+      - name: Exercise guarded out-of-band drift, repair, and re-verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'yes\n' | make local-drift
+          bash scripts/verify-local.sh
+          echo '[PASS] Safe Floci drift drill and architecture invariants verified.'
       - name: Destroy emulated resources and verify empty state
         shell: bash
         run: |
