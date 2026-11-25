@@ -10,6 +10,19 @@
 6. Review `terraform -chdir=environments/aws output`. Do not expose or upload state.
 7. After demo: `I_UNDERSTAND_AWS_CHARGES=YES CONFIRM_AWS_DESTROY=YES make aws-destroy`. Confirm resources are gone in the AWS Console and verify billing.
 
+## Guided command safety
+
+The wrapper refuses inherited Terraform CLI flags, state/workspace overrides,
+provider reattachment, custom CLI config and trace logging. Unset the named
+variable if a guard blocks your run; do not bypass the guard. Real AWS calls
+also reject environment credentials and service-specific endpoint overrides,
+ignore profile-configured endpoint URLs, verify a non-root STS identity, and
+pass the expected account as an explicit Terraform variable. Apply/destroy
+require a real interactive terminal as well as the existing charge/destruction
+acknowledgements. The provider independently checks allowed account IDs.
+These checks do not make a modified local configuration or a privileged role
+safe. Keep the reviewed checkout and Terraform/provider installation trusted.
+
 ## IMPORTANT: EC2 is isolated, without SSM connectivity
 The private EC2 is intentionally disabled. The private route table has no NAT/default internet route, and no AWS VPC interface endpoints are defined yet. To get secure SSM access, first design the three SSM endpoints (`ssm`, `ssmmessages`, `ec2messages` as required by region), Private DNS, endpoint SG ingress 443 from the VPC, and session permissions. **VPC endpoints have hourly/usage charges**. Do not flip `enable_compute=true` and assume you can connect immediately.
 

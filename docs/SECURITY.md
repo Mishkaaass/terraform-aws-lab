@@ -5,7 +5,7 @@ This is an educational IaC and local AWS API lab, **not** a production-certified
 | Guard | What the code and tests check | What remains unproven |
 | --- | --- | --- |
 | Separate Terraform roots | Floci provider has explicit localhost EC2/IAM/STS endpoints and fake credentials; AWS root has `allowed_account_ids` | Manual commands outside these workflows |
-| Guarded real-AWS scripts | Explicit non-default profile, expected account ID and interactive consent for apply/destroy | Cloud service costs, IAM least privilege and production readiness |
+| Guarded real-AWS scripts | Explicit non-default profile, non-root STS identity, account ID as a command-line variable, no endpoint overrides or inherited Terraform CLI/state flags, interactive terminal and consent for apply/destroy | Cloud service costs, IAM least privilege, modified local configuration and production readiness |
 | Default instance network | No SG ingress, VPC-only TCP 443 egress, private EC2 (disabled), IMDSv2 and encrypted EBS | Real AWS dataplane, OS security, runtime SSM reachability |
 | Local integration verifier | Verifies actual Floci VPC, 2-AZ subnet placement, route associations, IGW, SG, IAM attached policy | Actual AWS implementation of IAM/routing; availability |
 | No privileged Docker socket | Compose does not mount host Docker daemon; emulator only binds loopback | Complete safety of the Docker daemon or third-party images |

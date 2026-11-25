@@ -3,6 +3,15 @@
 # Safe to invoke through: bash scripts/terraform.sh <terraform arguments>
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/terraform-environment.sh"
+lab_check_terraform_environment
+# Local AWS API requests must bypass any inherited HTTP proxy.
+case "${1:-}" in
+  -chdir=environments/floci|-chdir=*/environments/floci)
+    export NO_PROXY="${NO_PROXY:+$NO_PROXY,}127.0.0.1,localhost"
+    export no_proxy="${no_proxy:+$no_proxy,}127.0.0.1,localhost"
+    ;;
+esac
 required="$(tr -d '[:space:]' < "$ROOT/.terraform-version")"
 if [[ ! "$required" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "[BLOCK] Invalid .terraform-version in repository." >&2
