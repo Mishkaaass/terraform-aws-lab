@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local, read-only allowlist HTTP server for the Infrastructure Failure Lab.
+"""Local, read-only allowlist HTTP server for the Infrastructure Studio.
 
 Never serve the repository root: it may contain .git, .terraform and tfstate.
 This process has no AWS, Docker or libvirt privileges and never runs commands.
