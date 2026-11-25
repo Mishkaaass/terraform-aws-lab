@@ -74,7 +74,7 @@ class EngineeringLabContract(unittest.TestCase):
         self.assertIn('class="first-run"', html)
         self.assertIn("No AWS account or Docker needed", html)
         self.assertIn("EDUCATIONAL DESIGN LABELS", js)
-        self.assertNotIn("enable_compute = \"+c.compute", js)
+        self.assertNotIn('"enable_compute = "+c.compute', js)
         self.assertNotIn('line(svg,222,113,222,364,"private")', js)
         self.assertIn('id="copy-doctor"', html)
         self.assertIn('id="reflection"', html)
