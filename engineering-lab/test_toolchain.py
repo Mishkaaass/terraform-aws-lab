@@ -57,7 +57,10 @@ class ToolchainContract(unittest.TestCase):
     def test_make_targets_share_selector_and_browser_needs_only_python(self) -> None:
         makefile = (ROOT / "Makefile").read_text()
         self.assertIn("TF := bash scripts/terraform.sh", makefile)
-        self.assertIn("studio:\n\t@python3 engineering-lab/serve.py", makefile)
+        self.assertIn("studio: setup\\n\\t@.venv/bin/python engineering-lab/serve.py", makefile)
+        self.assertIn("requirements:\\n\\t@bash scripts/requirements.sh", makefile)
+        self.assertIn("setup:\\n\\t@bash scripts/setup-studio.sh", makefile)
+        self.assertIn("studio-docker:\\n\\t@docker compose --profile studio up --build studio", makefile)
         self.assertIn("doctor:\n\t@bash engineering-lab/doctor.sh", makefile)
         self.assertNotIn("@terraform ", makefile)
         for path in ("scripts/drift-lab.sh", "scripts/verify-local.sh"):
