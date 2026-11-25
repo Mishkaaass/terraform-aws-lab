@@ -63,7 +63,7 @@ class ToolchainContract(unittest.TestCase):
         self.assertIn("studio-docker:\n\t@docker compose --profile studio up --build studio", makefile)
         self.assertIn("doctor:\n\t@bash engineering-lab/doctor.sh", makefile)
         self.assertNotIn("@terraform ", makefile)
-        for path in ("scripts/drift-lab.sh", "scripts/verify-local.sh"):
+        for path in ("scripts/drift-lab.sh", "scripts/verify_local.py"):
             self.assertIn("scripts/terraform.sh", (ROOT / path).read_text())
 
 
