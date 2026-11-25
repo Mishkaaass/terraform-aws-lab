@@ -24,6 +24,16 @@ Click any node to see what Terraform declares, its value, the exact source modul
 
 **Try:** Click the private subnet, then the security group, then the IAM profile. Explain why 'private', 'authorized to use SSM' and 'able to reach SSM' are three separate properties.
 
+## A first-time reviewer's 5-minute route
+
+**No experience required to start:** Open the studio and follow the tabs left to right.
+
+**Design Sandbox (simulation; no changes):** The top of the page explains four actions. Click **Example 1: Why can't my EC2 use SSM?**; the switches will be set automatically. Read the explanation under the examples and the right-hand diagnosis. Then click **Example 2: Manage EC2 privately** and explain why the proposed endpoints help, but still need DNS, security-group and real connectivity verification. Click **Example 3: What if I open SSH?** to inspect the security warning. You can adjust the toggles yourself afterward. None of those hypothetical SSM/NAT/SSH additions exists as a real Terraform implementation.
+
+**Run the Real Lab (terminal companion):** Read the four-step explanation: open a terminal in the cloned repo, copy just the command for the current checkpoint, run it manually, inspect its output, then paste *non-sensitive* output and click **Check Output Text**. Start at checkpoint 1 (`make test`), which does not need Docker or AWS. To go further, checkpoints 2–6 need a local emulator/Docker, and some need the AWS CLI. **Apply and drift modify the local emulator and Terraform state; explicitly review and approve them.** Checkpoint 7 is optional. The pasted-output matcher only detects expected strings; it is **not** secure proof of execution or a replacement for human review.
+
+**Different purposes:** Design Sandbox helps you *predict*. Run the Real Lab helps you *observe*. Incident Cases checks whether you can *diagnose*.
+
 ### 02 — Design Sandbox: explore changes before making them
 
 Change toggles for private EC2, *proposed/not-yet-implemented* SSM interface endpoints, hypothetical NAT, public IP, and worldwide SSH ingress. The what-if analysis updates immediately and explains the missing routes, policy clashes and security risks.
