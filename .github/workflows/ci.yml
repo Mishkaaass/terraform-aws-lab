@@ -38,12 +38,191 @@ jobs:
         run: terraform -chdir=environments/aws validate -no-color
       - name: Local safety check
         run: bash scripts/check.sh
-      - name: Engineering Dojo content, static HTTP security and source-reference tests
+      - name: Reviewer requirements and project .venv (no pip downloads)
+        run: |
+          bash scripts/requirements.sh
+          make setup
+          .venv/bin/python -c 'import sys,venv; assert sys.prefix != sys.base_prefix'
+      - name: Engineering Dojo content, isolated Python tests and source-reference tests
         run: |
           bash -n engineering-lab/security-preflight.sh
           bash -n engineering-lab/doctor.sh
-          python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v
-          python3 -m unittest discover -s scripts -p 'test_*.py' -v
+          bash -n scripts/setup-studio.sh scripts/requirements.sh
+          .venv/bin/python -m unittest discover -s engineering-lab -p 'test_*.py' -v
+          .venv/bin/python -m unittest discover -s scripts -p 'test_*.py' -v
+
+  studio-container:
+    name: Studio Docker reproducibility / static security smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (no persisted credentials)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate isolated Compose profile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose --profile studio config --quiet
+          grep -q '^[*]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Scan Terraform configuration (high / critical)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # verified signed v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: table
+          exit-code: '1'
+          hide-progress: true
+
+  secret-security:
+    name: Gitleaks secret scan (full history)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout full history without persisting credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reject committed secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3 pinned SHA
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+  local-api-integration:
+    name: Floci AWS API integration (apply / verify / destroy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Verify local-only prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -z "${AWS_ACCESS_KEY_ID:-}"
+          test -z "${AWS_SECRET_ACCESS_KEY:-}"
+          docker compose config --quiet
+          bash scripts/check.sh
+          aws --version
+      - name: Boot free local AWS API emulator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose up -d floci
+          bash scripts/wait-floci.sh
+      - name: Terraform plan and apply (Floci only; no cloud credentials)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          terraform -chdir=environments/floci init -input=false -lockfile=readonly
+          terraform -chdir=environments/floci plan -input=false -out="${RUNNER_TEMP}/floci.tfplan"
+          terraform -chdir=environments/floci apply -input=false "${RUNNER_TEMP}/floci.tfplan"
+      - name: Verify AWS API, resources and idempotency
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(terraform -chdir=environments/floci output -raw instance_count)" = "0"
+          bash scripts/verify-local.sh
+          echo '=== EXPECTED: No changes ==='
+          terraform -chdir=environments/floci plan -input=false -no-color -detailed-exitcode | tail -n 14
+          echo '[PASS] Applied infrastructure matches the desired configuration.'
+      - name: Exercise guarded out-of-band drift, repair, and re-verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'yes\n' | make local-drift
+          bash scripts/verify-local.sh
+          echo '[PASS] Safe Floci drift drill and architecture invariants verified.'
+      - name: Destroy emulated resources and verify empty state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          terraform -chdir=environments/floci destroy -input=false -auto-approve -no-color | tail -n 15
+          test -z "$(terraform -chdir=environments/floci state list)"
+          echo '[PASS] No managed resources remain in ephemeral state.'
+      - name: Always stop disposable emulator
+        if: ${{ always() }}
+        run: docker compose down -v --remove-orphans
+
+
+  libvirt-static:
+    name: Local Linux VM / Terraform validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1 pinned SHA
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Terraform format
+        run: terraform fmt -check -recursive environments/libvirt
+      - name: Terraform init without backend
+        run: terraform -chdir=environments/libvirt init -backend=false -input=false
+      - name: Terraform validate (no VM creation)
+        run: terraform -chdir=environments/libvirt validate -no-color
+      - name: Verify guarded VM defaults and cloud-init
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -q 'default     = 1536' environments/libvirt/variables.tf
+          grep -q 'autostart   = false' environments/libvirt/main.tf
+          grep -q 'ssh_pwauth: false' environments/libvirt/cloud-init.yaml.tftpl
+          grep -q 'lock_passwd: true' environments/libvirt/cloud-init.yaml.tftpl
+          grep -q 'network = "default"' environments/libvirt/main.tf
+          echo '[PASS] Local VM defaults and key-only SSH present'
+ .dockerignore
+          test -z "${AWS_ACCESS_KEY_ID:-}"
+      - name: Build and run the pinned Docker Studio (no Floci startup)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose --profile studio up --build -d studio
+          for n in $(seq 1 25); do
+            if curl --noproxy '*' -fsS --max-time 2 http://127.0.0.1:8765/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --noproxy '*' -fsSI http://127.0.0.1:8765/ | grep -qi 'content-security-policy:'
+          curl --noproxy '*' -fsS http://127.0.0.1:8765/ | grep -q 'Infrastructure Studio'
+          test "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/.git/config)" = 404
+          test "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/terraform.tfstate)" = 404
+          test "$(docker compose --profile studio ps -q floci)" = ""
+          echo '[PASS] Docker Studio starts from pinned image, isolated, and serves only public assets.'
+      - name: Clean up disposable Studio
+        if: ${{ always() }}
+        run: docker compose --profile studio down --remove-orphans
 
   iac-security:
     name: Trivy IaC security scan
