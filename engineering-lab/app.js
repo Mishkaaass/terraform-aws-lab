@@ -157,9 +157,47 @@
     {id:"apply",purpose:"Create the planned VPC, subnets and IAM in the LOCAL emulator.",impact:"Modifies Floci resources and local Terraform state; Terraform requests terminal confirmation.",expected:"Apply complete appears with resource counts you can independently inspect.",title:"Build the emulated infrastructure",risk:"CHANGES EMULATOR · CONFIRM",desc:"Apply only after reviewing the plan. Terraform asks for confirmation, then creates the VPC/subnets/routes/IAM/SG in Floci.",command:"make local-apply",hint:"Require 'Apply complete!' followed by the managed resource counts.",test:t=>/Apply complete! Resources: \d+ added, \d+ changed, \d+ destroyed\./.test(t),proof:"The apply affects the emulator and local Terraform state, not a real AWS account."},
     {id:"verify",purpose:"Independently query the emulator's resources rather than relying on the apply summary.",impact:"Local AWS CLI read requests only; they target 127.0.0.1:4566.",expected:"Query confirms VPC/subnets/security group. Examine the returned values.",title:"Inspect the control plane independently",risk:"LOCAL EMULATOR · READ",desc:"Query the emulator through AWS CLI. Observe VPC CIDR, subnet placement and security-group ingress rules.",command:"make local-verify",hint:"Look for '[OK] Queried emulated VPC, subnets, and SG via AWS CLI.'",test:t=>/\[OK\] Queried emulated VPC, subnets, and SG via AWS CLI\./.test(t),proof:"An independent API query strengthens evidence beyond Terraform's own output."},
     {id:"drift",purpose:"Observe an out-of-band VPC tag change, then identify and repair only that change.",impact:"Changes a local emulator tag; asks confirmation before applying a guarded repair. An interruption can leave drift.",expected:"PASS reports a narrow fix and a no-change Terraform plan.",title:"Simulate and repair drift",risk:"CHANGES EMULATOR TAG · CONFIRM",desc:"One script changes the local VPC Name tag out of band, requires a narrowly scoped saved plan, asks consent, repairs and verifies zero drift. Inspect it before running.",command:"make local-drift",hint:"Require '[PASS] Drift detected, safety-checked, repaired, and verified: No changes.'",test:t=>/\[PASS\] Drift detected, safety-checked, repaired, and verified: No changes\./.test(t),proof:"The drift script checks a single allowed VPC Name attribute change. It does not modify the real AWS environment."},
-    {id:"guest",purpose:"Optionally inspect a real local Ubuntu KVM VM and its health API.",impact:"Read-only checks for Floci, libvirt and guest HTTP. No SSH or sudo.",expected:"Small JSON with UP/RUNNING/HEALTHY or unknown/unavailable if not present.",title:"Inspect your real Ubuntu VM (optional)",risk:"READ-ONLY · REQUIRES KVM",desc:"Run the local probe for boot state, DHCP lease, guest health and emulator status. Its output contains only fixed categorical fields.",command:"python3 engineering-lab/probe.py",hint:"Paste JSON from the probe, then use 'Inspect evidence' to see categories.",test:t=>{try{const o=JSON.parse(t.trim());return validProbe(o);}catch(e){return false}},proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
+    {id:"guest",purpose:"Optionally inspect a real local Ubuntu KVM VM and its health API.",impact:"Read-only checks for Floci, libvirt and guest HTTP. No SSH or sudo.",expected:"Small JSON with UP/RUNNING/HEALTHY or unknown/unavailable if not present.",title:"Inspect your real Ubuntu VM (optional)",risk:"READ-ONLY · REQUIRES KVM",desc:"Run the local probe for boot state, DHCP lease, guest health and emulator status. Its output contains only fixed categorical fields.",command:"python3 engineering-lab/probe.py",hint:"Paste JSON from the probe, then use 'Inspect evidence' to see categories.",test:t=>Boolean(parseProbeText(t)),proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
   ];
   const validProbe=o=>o&&o.schema===1&&o.source==="local-readonly-probe"&&typeof o.observed_at==="string"&&["up","down","unknown"].includes(o.floci)&&["running","stopped","absent","unknown"].includes(o.vm)&&["healthy","unavailable","unknown"].includes(o.health)&&typeof o.vm_ip==="string"&&o.vm_ip.length<=45&&/^([0-9]{1,3}\.){3}[0-9]{1,3}$|^$/.test(o.vm_ip)&&Object.keys(o).every(k=>["schema","source","observed_at","floci","vm","health","vm_ip"].includes(k));
+
+  // An optional stopped guest is a valid observation. Inspecting JSON validates
+  // only the user-supplied shape, not actual host reachability or guest health.
+  const guestStep = steps.findIndex(s=>s.id==="guest");
+  function parseProbeText(text) {
+    const raw=String(text).trim();
+    if(!raw || raw.length>4096)return null;
+    const candidates=[raw,...raw.split(/\r?\n/).map(x=>x.trim()).filter(x=>x.startsWith("{")&&x.endsWith("}"))];
+    for(const candidate of candidates) {
+      try {
+        const observed=JSON.parse(candidate);
+        if(validProbe(observed))return observed;
+      }catch(e){/* Accept only one fixed-schema JSON object, never HTML or commands. */}
+    }
+    return null;
+  }
+  function refreshCheckpointNav(){
+    renderStepIndicator();
+    [...$("checkpoint-nav").children].forEach((button,i)=>{
+      button.classList.toggle("done",st.steps.has(i));
+      const label=button.querySelector("span");
+      if(label)label.textContent=st.steps.has(i)?"✓":String(i+1).padStart(2,"0");
+    });
+  }
+  function markProbeObserved(data, input) {
+    st.steps.set(guestStep,true);
+    st.steps.set("draft-"+guestStep,input.slice(0,4096));
+    renderEvidence(data);
+    const optional=(data.vm==="stopped"||data.vm==="absent"||data.vm==="unknown");
+    const outcome=optional?"Optional VM is not running; guest health was not verified.":"VM status is user-reported; inspect guest health separately.";
+    $("probe-message").textContent="JSON SCHEMA ACCEPTED · "+outcome+" No host commands executed by the browser.";
+    if(st.step===guestStep) {
+      $("step-result").textContent="Checkpoint 7 output format accepted. "+outcome;
+      $("step-result").className="pass";
+    }
+    refreshCheckpointNav();
+  }
+
   function renderSteps(){
     const nav=$("checkpoint-nav");clear(nav);
     steps.forEach((s,i)=>{const b=click("","checkpoint"+(i===st.step?" active":"")+(st.steps.has(i)?" done":""),()=>{st.step=i;renderSteps()});
