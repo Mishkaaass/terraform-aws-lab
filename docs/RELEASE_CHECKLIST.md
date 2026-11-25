@@ -28,16 +28,14 @@ Publish the first stable reviewer release only after all of the following are tr
 
 **Important:** A green pipeline is evidence for the specific implemented controls only. Do not describe Floci as a real AWS runtime or claim production certification. Never delete personal Terraform state to manufacture a clean demo.
 
-## GitHub commands (run on your authenticated workstation)
+## Publish from authenticated workstation (after merged-main CI is green)
 
 ```bash
 cd ~/projects/terraform-aws-lab
 git fetch origin main
 git switch main
 git pull --ff-only origin main
-gh repo edit Mishkaaass/terraform-aws-lab --description "Hands-on Terraform AWS lab: interactive architecture, safe Floci emulation, reproducible venv/Docker Studio and drift recovery."
-gh repo edit Mishkaaass/terraform-aws-lab --add-topic terraform --add-topic infrastructure-as-code --add-topic aws --add-topic devops --add-topic security --add-topic docker --add-topic python
-gh release create v1.0.0 --target main --title "Terraform AWS Lab v1.0.0" --notes-file CHANGELOG.md
+make publish-release
 ```
 
-Only run the final `gh release create` once the reviewed and merged `main` CI is green. If a tag/release already exists, inspect it first instead of overwriting.
+The guarded publisher requires the local `main` to exactly equal `origin/main`, a clean tracked worktree, an authenticated `gh` CLI, **all six required GitHub checks green for that exact commit**, and no existing `v1.0.0` release. It updates the repository description/topics and creates the GitHub Release **only after you type `publish v1.0.0`**. It never calls Terraform, Docker, libvirt or real AWS and never changes local project state. Branch protection/required checks must still be reviewed manually under GitHub Settings.
