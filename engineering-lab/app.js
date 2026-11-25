@@ -21,7 +21,7 @@
   const st={
     tab:"map",node:"vpc",
     config:{compute:false,ssm:false,nat:false,public:false,ssh:false},
-    steps:new Map(),step:0,
+    steps:new Map(),step:0,preset:null,
     missions:null,mission:0,phase:0,choices:new Map(),hints:new Set(),reflections:new Map()
   };
 
@@ -101,8 +101,24 @@
     $("inspector-source").href=root+v.source;
   }
 
+  const scenarios={
+    isolated:{config:{compute:true,ssm:false,nat:false,public:false,ssh:false},lesson:"A private EC2 needs BOTH an IAM role and connectivity to SSM services. The role only authorizes requests; there are no SSM endpoints or NAT in the current repo."},
+    endpoints:{config:{compute:true,ssm:true,nat:false,public:false,ssh:false},lesson:"Private interface endpoints could create a management path. They have NOT been implemented: endpoint security groups, DNS, supported APIs and actual connectivity still require design and testing."},
+    exposed:{config:{compute:true,ssm:false,nat:false,public:true,ssh:true},lesson:"Public IPv4 and SSH from everywhere violate the zero-ingress, private-only design. An instance is not made safely manageable simply by making it publicly reachable."}
+  };
+  function selectPreset(name){
+    const example=scenarios[name];if(!example)return;
+    st.preset=name;st.config={...example.config};renderDesign();
+  }
   function renderDesign(){
     for(const k of Object.keys(st.config))$("cfg-"+k).checked=st.config[k];
+    document.querySelectorAll("[data-preset]").forEach(button=>{
+      const on=button.dataset.preset===st.preset;
+      button.classList.toggle("selected",on);
+      button.setAttribute("aria-pressed",String(on));
+    });
+    $("design-lesson").textContent=st.preset?scenarios[st.preset].lesson:
+      "Choose Example 1 to begin. Then compare it with Example 2, or change the switches yourself.";
     const c=st.config,changes=[],issues=[];
     if(c.compute)changes.push(["+","module.compute.aws_instance.this[0] (preview only; Floci EC2 execution disabled)"]);
     if(c.ssm)changes.push(["+","Proposed SSM, SSMMessages and EC2Messages interface endpoints with SG/DNS (not implemented)"]);
@@ -134,13 +150,13 @@
   /* Independently executed steps. Evidence checks inspect supplied text only;
      they are not attestation and never mark a command as executed on their own. */
   const steps=[
-    {id:"tests",title:"Prove configuration intent",risk:"READ-ONLY · NO DOCKER",desc:"Mock provider tests check network, IAM and security assumptions without hitting an AWS endpoint. They don't show real routing.",command:"make test",hint:"Check for 'Success!' and 'passed' in Terraform test output.",test:t=>/Success!/.test(t)&&/passed/i.test(t),proof:"A green mock test proves HCL assertions, not the AWS control plane."},
-    {id:"boot",title:"Start a local control plane",risk:"STARTS LOCAL CONTAINER",desc:"Boot the Floci emulator on localhost:4566, without the Docker socket. This is a local API service, not real AWS.",command:"make local-up",hint:"Look for the local health response confirmation.",test:t=>/Floci API responding on 127\.0\.0\.1:4566/.test(t),proof:"The emulator answers, but Terraform resources may not exist yet."},
-    {id:"plan",title:"Predict the Terraform diff",risk:"READ-ONLY PLAN",desc:"Terraform compares desired configuration against local Floci state. Read every proposed resource before applying.",command:"make local-plan",hint:"Inspect 'Plan: X to add, Y to change, Z to destroy' or a no-change result.",test:t=>/Plan:\s*\d+ to add,\s*\d+ to change,\s*\d+ to destroy\b/.test(t)||/No changes\. Your infrastructure matches/.test(t),proof:"A plan describes intent. It is not evidence of actual resources."},
-    {id:"apply",title:"Build the emulated infrastructure",risk:"CHANGES EMULATOR · CONFIRM",desc:"Apply only after reviewing the plan. Terraform asks for confirmation, then creates the VPC/subnets/routes/IAM/SG in Floci.",command:"make local-apply",hint:"Require 'Apply complete!' followed by the managed resource counts.",test:t=>/Apply complete! Resources: \d+ added, \d+ changed, \d+ destroyed\./.test(t),proof:"The apply affects the emulator and local Terraform state, not a real AWS account."},
-    {id:"verify",title:"Inspect the control plane independently",risk:"LOCAL EMULATOR · READ",desc:"Query the emulator through AWS CLI. Observe VPC CIDR, subnet placement and security-group ingress rules.",command:"make local-verify",hint:"Look for '[OK] Queried emulated VPC, subnets, and SG via AWS CLI.'",test:t=>/\[OK\] Queried emulated VPC, subnets, and SG via AWS CLI\./.test(t),proof:"An independent API query strengthens evidence beyond Terraform's own output."},
-    {id:"drift",title:"Simulate and repair drift",risk:"CHANGES EMULATOR TAG · CONFIRM",desc:"One script changes the local VPC Name tag out of band, requires a narrowly scoped saved plan, asks consent, repairs and verifies zero drift. Inspect it before running.",command:"make local-drift",hint:"Require '[PASS] Drift detected, safety-checked, repaired, and verified: No changes.'",test:t=>/\[PASS\] Drift detected, safety-checked, repaired, and verified: No changes\./.test(t),proof:"The drift script checks a single allowed VPC Name attribute change. It does not modify the real AWS environment."},
-    {id:"guest",title:"Inspect your real Ubuntu VM (optional)",risk:"READ-ONLY · REQUIRES KVM",desc:"Run the local probe for boot state, DHCP lease, guest health and emulator status. Its output contains only fixed categorical fields.",command:"python3 engineering-lab/probe.py",hint:"Paste JSON from the probe, then use 'Inspect evidence' to see categories.",test:t=>{try{const o=JSON.parse(t.trim());return validProbe(o);}catch(e){return false}},proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
+    {id:"tests",purpose:"Check Terraform's configuration assertions before introducing any services.",impact:"May initialize/download local provider files; no Docker or AWS deployment.",expected:"Terraform test prints Success and a number of passed tests.",title:"Prove configuration intent",risk:"READ-ONLY · NO DOCKER",desc:"Mock provider tests check network, IAM and security assumptions without hitting an AWS endpoint. They don't show real routing.",command:"make test",hint:"Check for 'Success!' and 'passed' in Terraform test output.",test:t=>/Success!/.test(t)&&/passed/i.test(t),proof:"A green mock test proves HCL assertions, not the AWS control plane."},
+    {id:"boot",purpose:"Start a local implementation of selected AWS APIs. It isn't the real AWS cloud.",impact:"Starts or reuses a Docker container listening on 127.0.0.1:4566.",expected:"The terminal confirms Floci API responding on 127.0.0.1:4566.",title:"Start a local control plane",risk:"STARTS LOCAL CONTAINER",desc:"Boot the Floci emulator on localhost:4566, without the Docker socket. This is a local API service, not real AWS.",command:"make local-up",hint:"Look for the local health response confirmation.",test:t=>/Floci API responding on 127\.0\.0\.1:4566/.test(t),proof:"The emulator answers, but Terraform resources may not exist yet."},
+    {id:"plan",purpose:"Inspect what Terraform WOULD add, change or destroy before approving anything.",impact:"Does not apply resources, but make may start Floci and Terraform can refresh local state.",expected:"You see resource counts or a No changes statement; examine the entire plan.",title:"Predict the Terraform diff",risk:"READ-ONLY PLAN",desc:"Terraform compares desired configuration against local Floci state. Read every proposed resource before applying.",command:"make local-plan",hint:"Inspect 'Plan: X to add, Y to change, Z to destroy' or a no-change result.",test:t=>/Plan:\s*\d+ to add,\s*\d+ to change,\s*\d+ to destroy\b/.test(t)||/No changes\. Your infrastructure matches/.test(t),proof:"A plan describes intent. It is not evidence of actual resources."},
+    {id:"apply",purpose:"Create the planned VPC, subnets and IAM in the LOCAL emulator.",impact:"Modifies Floci resources and local Terraform state; Terraform requests terminal confirmation.",expected:"Apply complete appears with resource counts you can independently inspect.",title:"Build the emulated infrastructure",risk:"CHANGES EMULATOR · CONFIRM",desc:"Apply only after reviewing the plan. Terraform asks for confirmation, then creates the VPC/subnets/routes/IAM/SG in Floci.",command:"make local-apply",hint:"Require 'Apply complete!' followed by the managed resource counts.",test:t=>/Apply complete! Resources: \d+ added, \d+ changed, \d+ destroyed\./.test(t),proof:"The apply affects the emulator and local Terraform state, not a real AWS account."},
+    {id:"verify",purpose:"Independently query the emulator's resources rather than relying on the apply summary.",impact:"Local AWS CLI read requests only; they target 127.0.0.1:4566.",expected:"Query confirms VPC/subnets/security group. Examine the returned values.",title:"Inspect the control plane independently",risk:"LOCAL EMULATOR · READ",desc:"Query the emulator through AWS CLI. Observe VPC CIDR, subnet placement and security-group ingress rules.",command:"make local-verify",hint:"Look for '[OK] Queried emulated VPC, subnets, and SG via AWS CLI.'",test:t=>/\[OK\] Queried emulated VPC, subnets, and SG via AWS CLI\./.test(t),proof:"An independent API query strengthens evidence beyond Terraform's own output."},
+    {id:"drift",purpose:"Observe an out-of-band VPC tag change, then identify and repair only that change.",impact:"Changes a local emulator tag; asks confirmation before applying a guarded repair. An interruption can leave drift.",expected:"PASS reports a narrow fix and a no-change Terraform plan.",title:"Simulate and repair drift",risk:"CHANGES EMULATOR TAG · CONFIRM",desc:"One script changes the local VPC Name tag out of band, requires a narrowly scoped saved plan, asks consent, repairs and verifies zero drift. Inspect it before running.",command:"make local-drift",hint:"Require '[PASS] Drift detected, safety-checked, repaired, and verified: No changes.'",test:t=>/\[PASS\] Drift detected, safety-checked, repaired, and verified: No changes\./.test(t),proof:"The drift script checks a single allowed VPC Name attribute change. It does not modify the real AWS environment."},
+    {id:"guest",purpose:"Optionally inspect a real local Ubuntu KVM VM and its health API.",impact:"Read-only checks for Floci, libvirt and guest HTTP. No SSH or sudo.",expected:"Small JSON with UP/RUNNING/HEALTHY or unknown/unavailable if not present.",title:"Inspect your real Ubuntu VM (optional)",risk:"READ-ONLY · REQUIRES KVM",desc:"Run the local probe for boot state, DHCP lease, guest health and emulator status. Its output contains only fixed categorical fields.",command:"python3 engineering-lab/probe.py",hint:"Paste JSON from the probe, then use 'Inspect evidence' to see categories.",test:t=>{try{const o=JSON.parse(t.trim());return validProbe(o);}catch(e){return false}},proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
   ];
   const validProbe=o=>o&&o.schema===1&&o.source==="local-readonly-probe"&&typeof o.observed_at==="string"&&["up","down","unknown"].includes(o.floci)&&["running","stopped","absent","unknown"].includes(o.vm)&&["healthy","unavailable","unknown"].includes(o.health)&&typeof o.vm_ip==="string"&&o.vm_ip.length<=45&&/^([0-9]{1,3}\.){3}[0-9]{1,3}$|^$/.test(o.vm_ip)&&Object.keys(o).every(k=>["schema","source","observed_at","floci","vm","health","vm_ip"].includes(k));
   function renderSteps(){
@@ -154,10 +170,13 @@
     $("step-risk").textContent=s.risk;
     $("step-title").textContent=s.title;
     $("step-explain").textContent=s.desc;
+    $("step-purpose").textContent=s.purpose;
+    $("step-impact").textContent=s.impact;
+    $("step-expected").textContent=s.expected;
     $("step-command").textContent=s.command;
     $("step-proof").textContent="WHAT THIS PROVES → "+s.proof;
     $("step-output").value=st.steps.get("draft-"+st.step)||"";
-    $("step-result").textContent=st.steps.has(st.step)?"PREVIOUS OUTPUT PASSED":"";
+    $("step-result").textContent=st.steps.has(st.step)?"Earlier pasted output contained the expected marker.":"";
     $("step-result").className=st.steps.has(st.step)?"pass":"";
   }
   function verifyStep(){
@@ -165,14 +184,20 @@
     // Only completed numeric keys count; draft entries are not evidence.
     if(steps[st.step].test(t)) {
       st.steps.set(st.step,true);
-      $("step-result").textContent="OUTPUT MATCHED · REVIEW MANUALLY";
+      $("step-result").textContent="Expected text found. Review the entire output yourself before continuing.";
       $("step-result").className="pass";
     } else {
       st.steps.delete(st.step);
       $("step-result").textContent="NOT VERIFIED · "+steps[st.step].hint;
       $("step-result").className="";
     }
-    renderSteps();renderStepIndicator();
+    // Preserve the user's pasted output and immediate feedback.
+    renderStepIndicator();
+    [...$("checkpoint-nav").children].forEach((button,i)=>{
+      button.classList.toggle("done",st.steps.has(i));
+      const label=button.querySelector("span");
+      if(label)label.textContent=st.steps.has(i)?"✓":String(i+1).padStart(2,"0");
+    });
   }
   function progressCount(){return [...st.steps.keys()].filter(Number.isInteger).length;}
   function renderEvidence(o){
@@ -286,13 +311,17 @@
       st.missions=data;
       document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
       document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.go)));
-      document.querySelectorAll(".switch-row input").forEach(b=>b.addEventListener("change",()=>{st.config[b.id.slice(4)]=b.checked;renderDesign()}));
-      $("design-reset").addEventListener("click",()=>{Object.keys(st.config).forEach(k=>st.config[k]=false);renderDesign()});
+      document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>selectPreset(b.dataset.preset)));
+      document.querySelectorAll(".switch-row input").forEach(b=>b.addEventListener("change",()=>{
+        st.config[b.id.slice(4)]=b.checked;st.preset=null;renderDesign();
+      }));
+      $("design-reset").addEventListener("click",()=>{Object.keys(st.config).forEach(k=>st.config[k]=false);st.preset=null;renderDesign()});
       $("copy-decision").addEventListener("click",()=>copy("INFRASTRUCTURE STUDIO DESIGN REVIEW\n"+$("plan-code").textContent+"\nReview: "+$("decision-note").value,$("decision-copy-status")));
       $("copy-command").addEventListener("click",()=>copy(steps[st.step].command,$("step-result")));
       $("copy-probe").addEventListener("click",()=>copy($("probe-command").textContent,$("probe-message")));
       $("step-output").addEventListener("input",()=>st.steps.set("draft-"+st.step,$("step-output").value.slice(0,20000)));
       $("verify-step").addEventListener("click",verifyStep);
+      $("next-checkpoint").addEventListener("click",()=>{st.step=(st.step+1)%steps.length;renderSteps();});
       $("inspect-probe").addEventListener("click",inspectProbe);
       $("hint-btn").addEventListener("click",()=>{const k=caseKey(st.mission,st.phase);st.hints.has(k)?st.hints.delete(k):st.hints.add(k);renderQuestion()});
       $("next-btn").addEventListener("click",nextQuestion);
