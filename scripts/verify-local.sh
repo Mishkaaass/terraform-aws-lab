@@ -4,8 +4,13 @@ command -v aws >/dev/null || { echo 'aws CLI required: https://docs.aws.amazon.c
 command -v terraform >/dev/null || { echo 'Terraform required.'; exit 1; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-VPC_ID="$(terraform -chdir=environments/floci output -raw vpc_id)"
-SG_ID="$(terraform -chdir=environments/floci output -raw security_group_id)"
+VPC_ID="$(terraform -chdir=environments/floci output -raw vpc_id 2>/dev/null || true)"
+SG_ID="$(terraform -chdir=environments/floci output -raw security_group_id 2>/dev/null || true)"
+if [[ ! "$VPC_ID" =~ ^vpc-[[:alnum:]]+$ ]] || [[ ! "$SG_ID" =~ ^sg-[[:alnum:]]+$ ]]; then
+  echo '[BLOCK] Missing or invalid Terraform VPC/SG outputs. Do not verify against an unknown state.' >&2
+  echo '[INFO] Check: terraform -chdir=environments/floci workspace show; terraform -chdir=environments/floci state list' >&2
+  exit 2
+fi
 export AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true
 unset AWS_PROFILE || true
 printf '=== LOCAL AWS CONTROL PLANE ===\n'
