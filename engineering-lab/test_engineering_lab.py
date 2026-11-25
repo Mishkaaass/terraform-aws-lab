@@ -13,6 +13,22 @@ VALID_SAFETY = {"readonly", "interactive", "changes-emulator", "guarded-cloud"}
 
 
 class EngineeringLabContract(unittest.TestCase):
+    def test_optional_probe_uses_single_paste_and_never_claims_vm_health(self) -> None:
+        html = (LAB / "index.html").read_text(encoding="utf-8")
+        js = (LAB / "app.js").read_text(encoding="utf-8")
+        self.assertIn('id="probe-step-guide"', html)
+        self.assertIn('id="jump-probe"', html)
+        self.assertIn('id="probe-input"', html)
+        self.assertIn('id="inspect-probe"', html)
+        self.assertIn('st.steps.set(guestStep,true)', js)
+        self.assertIn('$("step-output").hidden=probeStep', js)
+        self.assertIn('$("verify-step").hidden=probeStep', js)
+        self.assertIn('if(value)markProbeObserved(value,text)', js)
+        self.assertIn('o.vm==="stopped"?" · OPTIONAL"', js)
+        self.assertIn('This does not prove the VM is healthy.', js)
+        self.assertIn('function parseProbeText(text)', js)
+        self.assertIn('if(validProbe(observed))return observed', js)
+
     def test_schema_and_decision_count(self) -> None:
         self.assertEqual(MISSIONS["schema"], 1)
         self.assertGreaterEqual(len(MISSIONS["missions"]), 7)
