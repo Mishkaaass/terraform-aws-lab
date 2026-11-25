@@ -58,6 +58,14 @@ class EngineeringLabContract(unittest.TestCase):
         self.assertIn("renderTopology", js)
         self.assertIn("renderDesign", js)
         self.assertIn("inspectProbe", js)
+        for scenario in ("isolated", "endpoints", "exposed"):
+            self.assertIn(f'data-preset="{scenario}"', html)
+        for element in ("design-lesson", "step-purpose", "step-impact",
+                        "step-expected", "next-checkpoint"):
+            self.assertIn(f'id="{element}"', html)
+        self.assertIn("function selectPreset(", js)
+        self.assertIn("function renderSteps(", js)
+        self.assertIn("This is a learning-model preview", js)
         self.assertIn('id="reflection"', html)
         serve = (LAB / "serve.py").read_text(encoding="utf-8")
         self.assertIn("127.0.0.1", serve)
