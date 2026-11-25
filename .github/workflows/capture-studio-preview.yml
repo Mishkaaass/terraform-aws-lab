@@ -69,4 +69,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- docs/assets/infrastructure-studio-system-map.png
           git commit -m "docs: capture actual Infrastructure Studio system map for README"
+          # Branch may have advanced while Chromium was installing. Rebase this
+          # one generated PNG on current remote state; never force-push.
+          git fetch origin docs/studio-readme-preview
+          git rebase FETCH_HEAD
           git push origin HEAD:docs/studio-readme-preview
