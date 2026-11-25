@@ -75,11 +75,12 @@
     label(svg,80,170,"AVAILABILITY ZONE A");
     label(svg,475,170,"AVAILABILITY ZONE B");
     // Routed links are schematic, not measured path traces.
+    // Only the public route table has an IGW default route.
+    // Draw NO lines from the gateway to private subnets: that would mislead learners.
     line(svg,222,113,222,194,"public");
     line(svg,222,113,608,194,"public");
-    line(svg,222,113,222,364,"private");
-    line(svg,222,113,608,364,"private");
-    line(svg,704,108,704,200,"private");
+    label(svg,104,307,"PRIVATE NETWORK · NO INTERNET ROUTE");
+    label(svg,498,307,"PRIVATE NETWORK · NO INTERNET ROUTE");
     boxNode(svg,"vpc",335,8,200,63,"VPC / 10.42.0.0/16","Click to inspect");
     boxNode(svg,"igw",106,70,208,58,"INTERNET GATEWAY","Public routing");
     boxNode(svg,"iam",597,70,207,58,"IAM / SSM ROLE","Identity only");
