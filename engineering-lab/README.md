@@ -44,6 +44,16 @@ Change toggles for private EC2, *proposed/not-yet-implemented* SSM interface end
 
 ### 03 — Run the Real Lab: make Terraform observable
 
+**First, run the new read-only preflight:**
+
+```bash
+bash engineering-lab/doctor.sh
+```
+
+This checks whether the user's Terraform is version 1.17.x, whether the Docker daemon can be queried, whether a VPC in the local Terraform state still exists in Floci, and whether the optional VM is running. A BLOCK message must be resolved *before* running further checkpoints; do not automatically reset Terraform state or delete/recreate resources. The diagnostic does not fix anything and never runs sudo. Never paste Design Sandbox example values (`enable_compute = false`, etc.) into a shell — they are explanatory snippets, not commands.
+
+
+
 This tab is your guided terminal companion. Every checkpoint has a reviewed command, its effect, expected evidence, a field to paste command output and a basic marker matcher. **The reviewer has to run commands themselves**. Pasted output is kept in page memory, not sent anywhere. Markers are educational convenience checks, **not cryptographic evidence or a substitute for verifying the plan**.
 
 | Stage | Command | Changes anything? | What to observe |
