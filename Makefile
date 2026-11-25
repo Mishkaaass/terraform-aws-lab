@@ -28,7 +28,18 @@ test: init-local
 	@terraform -chdir=environments/floci test -no-color
 
 local-up:
-	@docker compose up -d
+	@# If the existing localhost emulator is healthy, do not require Docker daemon access.
+	@if curl --noproxy '*' -fsS --max-time 2 http://127.0.0.1:4566/_floci/health >/dev/null 2>&1; then \
+		echo '[REUSE] Healthy localhost Floci found; skipping Docker startup.'; \
+	else \
+		echo '[INFO] Local Floci is not running; Docker access is required to start it.'; \
+		if ! docker info >/dev/null 2>&1; then \
+			echo '[BLOCK] Docker daemon unavailable to this user. Do not change socket permissions.' >&2; \
+			echo '[INFO] Use an isolated lab host or review your Docker setup first.' >&2; \
+			exit 1; \
+		fi; \
+		docker compose up -d || exit $?; \
+	fi
 	@bash scripts/wait-floci.sh
 
 local-plan: local-up init-local
