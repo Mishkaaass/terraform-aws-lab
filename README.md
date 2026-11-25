@@ -26,17 +26,24 @@ flowchart TB
   EC2 --> HARD[No SSH / no public IP / IMDSv2 / EBS encryption]
 ```
 
-## Interactive Engineering Dojo — 21 decisions, 7 incidents
+## Interactive Infrastructure Studio — learn by operating the system
 
-**[Launch the reviewer-facing failure lab](engineering-lab/README.md)**. A free local browser simulator with recorded incident evidence, fault diagnosis, competing remediation choices, engineering explanations, source-code proofs, a score and self-written incident reviews. Includes the actual KVM PCI/VirtIO and AppArmor debugging incidents, a safe Floci drift drill, IAM/network reasoning and CI evidence triage.
+**[Infrastructure Studio reviewer guide](engineering-lab/README.md)** is a four-workspace hands-on experience, distinct from the CI/CD OpsBoard console. No screenshots or static quiz required:
 
-Run from the repository root with no AWS account, Docker, Terraform, KVM or admin access:
+1. **System Map** — click the real Terraform VPC, route tables, public and isolated subnets, IAM role, security group and optional EC2. See the actual module and engineering tradeoff.
+2. **Design Sandbox** — toggle compute, proposed SSM endpoints, NAT, public IP and inbound SSH. Read a clearly labeled **simulation** of the resulting architecture and risk; no files or cloud resources change.
+3. **Run the Real Lab** — follow seven terminal checkpoints (Terraform tests → Floci boot → plan → apply → AWS CLI verify → safe drift/repair → optional KVM). Paste output for basic validation and use a separate read-only local probe for actual Floci/VM/HTTP observations.
+4. **Incident Cases** — seven grounded debugging scenarios / 21 decisions, source references, explanations, postmortems and review notes.
+
+**Run the no-credentials browser playground:**
 
 ```bash
 python3 engineering-lab/serve.py
 ```
 
-Open **http://127.0.0.1:8765/**. The browser runs no shell commands, uses no credentials, and does **not** claim simulated signals are live. For optional real inspection or drift exercises, see [the learning guide](engineering-lab/README.md).
+Open **http://127.0.0.1:8765/**. The dedicated localhost server allowlists only four static UI assets; it does not serve `.git`, `*.tfstate`, scripts or credentials. **Never serve the repository root via `python3 -m http.server`.**
+
+For independent host-only observations, manually run `python3 engineering-lab/probe.py` and paste the JSON in the Real Lab tab. The browser never directly runs Terraform, Docker, `sudo` or AWS commands and does not upload your pasted output. A browser output checker does **not** cryptographically verify command execution; human and terminal inspection still matter.
 
 ## Quick start: no AWS account needed
 
