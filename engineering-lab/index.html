@@ -1,50 +1,103 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
-<meta name="description" content="A hands-on engineering decision simulator using real Terraform, KVM and cloud infrastructure evidence.">
-<title>Infrastructure Failure Lab — Terraform Portfolio</title>
-<link rel="stylesheet" href="./style.css">
-<script src="./app.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Infrastructure Studio — explore a real Terraform architecture, simulate engineering decisions, and validate a local lab.">
+  <title>Infrastructure Studio · Terraform AWS Lab</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#mission">Skip to engineering lab</a>
-<div class="shell">
-  <aside class="sidebar">
-    <div class="brand"><div class="brand-icon">I<span>.</span></div><div><strong>INFRASTRUCTURE LAB</strong><small>TERRAFORM / ENGINEERING</small></div></div>
-    <div class="rail-heading">SYSTEM STATUS</div>
-    <div class="status-card"><span class="status-pulse"></span><div><strong>Training environment</strong><span>Offline · non-executing</span></div></div>
-    <div class="rail-heading mission-label">MISSION CONTROL</div>
-    <nav id="mission-nav" aria-label="Engineering scenarios"></nav>
-    <div class="rail-foot">
-      <div class="rail-heading">REVIEWER MODE</div>
-      <p>Decide before seeing the answer. Explanations and evidence only unlock after an attempt.</p>
-      <a href="../README.md" class="small-link">Project documentation ↗</a>
-    </div>
-  </aside>
-  <main id="mission" class="main">
-    <header class="topbar"><div class="crumb">PORTFOLIO / <strong>ENGINEERING DOJO</strong></div><div class="top-actions"><span class="static-pill">NO AWS CREDENTIALS</span><button id="reset-all" class="text-button" type="button">↺ Reset session</button></div></header>
-    <div class="content">
-      <section class="heading-block"><div class="eyebrow">INTERACTIVE INFRASTRUCTURE TRAINING <span>—</span> REV 01</div><div class="title-row"><div><h1>Failure is the <em>curriculum.</em></h1><p>Observe. Form a hypothesis. Choose the safest action. Verify the outcome.</p></div><div class="scoreboard"><span>SESSION SCORE</span><strong id="score">00<span class="score-denom">/21</span></strong><div id="progress-text">0 of 21 decisions completed</div></div></div></section>
-      <section class="warning" id="sim-disclosure" role="note"></section>
-      <div class="work-layout">
-        <section class="scenario-panel">
-          <div class="panel-top"><div><span id="scenario-index" class="mono-tag">INCIDENT 01 / 07</span> <span id="scenario-type" class="type-tag">REAL INCIDENT REPLAY</span></div><span id="impact" class="impact">PROVISIONING BLOCKED</span></div>
-          <div class="scenario-body"><div class="track" id="track"></div><h2 id="scenario-title"></h2><p id="scenario-story"></p><div class="phase-line"><span id="phase-number">01 / 03</span><div id="phase-steps" class="steps"></div></div>
-            <div id="challenge" class="challenge"><div class="challenge-kicker" id="challenge-stage"></div><h3 id="question"></h3><div id="options" class="options"></div><div id="feedback" class="feedback" hidden></div><div class="challenge-actions"><button id="hint-btn" class="ghost" type="button">Show thinking hint</button><button id="next-btn" class="primary" type="button" disabled>Next decision <span aria-hidden="true">→</span></button></div><div id="hint" class="hint" hidden></div></div>
-            <section id="debrief" class="debrief" hidden><div class="challenge-kicker">ENGINEERING DEBRIEF</div><h3>What would you say in an interview?</h3><p id="debrief-text"></p><label for="reflection">Explain the root cause, decision, and independent proof in your own words:</label><textarea id="reflection" rows="5" placeholder="I first observed... My hypothesis was... I rejected... I would verify by..."></textarea><div class="debrief-actions"><button class="ghost" id="copy-notes" type="button">Copy my review notes</button><button class="primary" id="next-mission" type="button">Next mission →</button></div><div id="copied" class="inline-note" role="status"></div></section>
-          </div>
-        </section>
-        <aside class="evidence-column">
-          <section class="evidence-panel"><div class="section-header"><span>OBSERVABILITY</span><span class="tiny-live">RECORDED</span></div><h3>Evidence locker</h3><p class="section-intro">Source-based snapshots, not live telemetry. Inspect both layers before choosing.</p><div id="evidence"></div></section>
-          <section class="evidence-panel sources"><div class="section-header"><span>SOURCE OF TRUTH</span><span>GITHUB</span></div><h3>Verify in code</h3><div id="source-list"></div><p class="micro">Links open repository source. Answers cite the actual project files, not invented runtime telemetry.</p></section>
-          <section class="evidence-panel proof-panel"><div class="section-header"><span>LAB PROTOCOL</span><span>READ-ONLY UI</span></div><div class="protocol-row"><span>01</span><div><strong>Inspect</strong><small>Find the failing layer.</small></div></div><div class="protocol-row"><span>02</span><div><strong>Decide</strong><small>Choose the smallest justified intervention.</small></div></div><div class="protocol-row"><span>03</span><div><strong>Prove</strong><small>Match claim to independent evidence.</small></div></div></section>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
+<div class="app">
+  <header class="masthead">
+    <a class="wordmark" href="#map" aria-label="Infrastructure Studio home"><span class="mark">T<span>·</span></span><span class="brand-name">TERRAFORM<span class="brand-thin">STUDIO</span><small>INFRASTRUCTURE, EXPLAINED</small></span></a>
+    <div class="header-right"><span class="edition">OPEN ENGINEERING LAB <b>002</b></span><a class="repo-link" href="https://github.com/Mishkaaass/terraform-aws-lab" target="_blank" rel="noopener noreferrer">VIEW SOURCE <span aria-hidden="true">↗</span></a></div>
+  </header>
+
+  <main id="workspace" class="wrap">
+    <section class="intro">
+      <div class="intro-copy"><div class="overline"><span class="overline-rule"></span> BUILD IT. BREAK THE ASSUMPTION. PROVE IT.</div>
+        <h1>See the system.<br><span>Think like its engineer.</span></h1>
+        <p>Not just multiple choice. Explore the actual architecture, change a design, predict the outcome, then validate real local infrastructure with evidence.</p>
+        <div class="intro-flags"><span><i class="dot"></i> No AWS account required for playground</span><span><i class="dot"></i> Terminal commands never run from this page</span></div>
+      </div>
+      <div class="issue-stamp"><div class="stamp-label">ENGINEERING NOTEBOOK</div><strong>02<span>/</span>04</strong><div class="stamp-base">TERRAFORM · FLOCI · LIBVIRT</div><div class="stamp-mini">REV 02 — LEARN BY DOING</div></div>
+    </section>
+
+    <nav class="tabs" role="tablist" aria-label="Lab workspaces">
+      <button class="tab active" type="button" role="tab" id="tab-map" aria-controls="view-map" aria-selected="true" data-tab="map"><span>01</span> SYSTEM MAP</button>
+      <button class="tab" type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="false" data-tab="design"><span>02</span> DESIGN SANDBOX</button>
+      <button class="tab" type="button" role="tab" id="tab-real" aria-controls="view-real" aria-selected="false" data-tab="real"><span>03</span> RUN THE REAL LAB</button>
+      <button class="tab" type="button" role="tab" id="tab-cases" aria-controls="view-cases" aria-selected="false" data-tab="cases"><span>04</span> INCIDENT CASES</button>
+    </nav>
+
+    <section class="workview" id="view-map" role="tabpanel" aria-labelledby="tab-map">
+      <div class="section-heading"><div><div class="eyebrow">01 / ARCHITECTURE EXPLORER</div><h2>Follow the infrastructure, not the slides.</h2><p>Click any component to inspect what exists in Terraform, what it connects to, and which file defines it.</p></div><span class="side-stamp">DESIGN AS CODE / V1.0</span></div>
+      <div class="explorer-layout">
+        <div class="sheet"><div class="sheet-bar"><span><i class="sheet-indicator"></i> NETWORK TOPOLOGY</span><div class="sheet-legend"><span><i class="legend-public"></i> Public route</span><span><i class="legend-private"></i> Isolated</span><span><i class="legend-optional"></i> Optional</span></div></div>
+          <div class="blueprint" id="topology-surface"><svg id="topology" viewBox="0 0 870 510" role="img" aria-label="Clickable VPC architecture graph showing Internet Gateway, public and isolated private subnets in two availability zones, security group and optional compute"></svg></div>
+          <div class="blueprint-footer"><span>VPC 10.42.0.0/16 · us-east-1a / 1b in Floci</span><span>NOT LIVE TELEMETRY</span></div>
+        </div>
+        <aside class="inspector"><div class="inspector-top"><span class="micro-label">COMPONENT INSPECTOR</span><span class="inspector-icon">↗</span></div>
+          <div id="inspector-kind" class="inspector-kind"></div><h3 id="inspector-name"></h3><p id="inspector-desc"></p>
+          <div id="inspector-details" class="detail-rows"></div><div class="inspector-learning"><strong>WHY IT MATTERS</strong><p id="inspector-why"></p></div>
+          <a id="inspector-source" class="source-action" href="https://github.com/Mishkaaass/terraform-aws-lab" target="_blank" rel="noopener noreferrer">READ THE TERRAFORM SOURCE <span>↗</span></a>
         </aside>
       </div>
-      <footer>INFRASTRUCTURE FAILURE LAB <span>•</span> Simulations never run shell commands, mutate Terraform state, or contact AWS. <span>•</span> Built from documented project evidence.</footer>
-    </div>
+      <div class="mini-cards"><article><span>01 / ISOLATION</span><strong>Private isn't just a name.</strong><p>No NAT, no private default route, and no inbound rules. Trace the packet path to understand why.</p></article><article><span>02 / IDENTITY</span><strong>IAM ≠ network access.</strong><p>The SSM role authorizes API calls but cannot create reachability to an SSM endpoint.</p></article><article><span>03 / TEST SCOPE</span><strong>Emulation isn't production AWS.</strong><p>Floci validates local API behavior. It does not enforce or prove AWS's actual network dataplane.</p></article></div>
+      <div class="next-cta"><div><small>YOUR TURN</small><strong>What happens if you add an EC2 instance without a management route?</strong></div><button type="button" class="solid-btn" data-go="design">TRY A DESIGN CHANGE →</button></div>
+    </section>
+
+    <section class="workview" id="view-design" role="tabpanel" aria-labelledby="tab-design" hidden>
+      <div class="section-heading"><div><div class="eyebrow">02 / INTERACTIVE DESIGN SANDBOX</div><h2>Make a change. Read the consequences.</h2><p>Toggle architectural decisions, inspect a simulated plan, then explain whether you would approve it.</p></div><span class="side-stamp">SIMULATION ONLY · ZERO MUTATIONS</span></div>
+      <div class="design-layout">
+        <div class="control-panel"><div class="control-header"><span>DESIRED CONFIGURATION</span><button class="reset-link" id="design-reset" type="button">RESET TO REPO ↺</button></div>
+          <div class="control-intro"><strong>Starting from the repository defaults</strong><p>One VPC · four subnets · no NAT · no EC2 · no inbound rules.</p></div>
+          <div class="switch-list">
+            <label class="switch-row"><span><strong>Enable private EC2</strong><small>Existing optional Terraform variable · preview only</small></span><input type="checkbox" id="cfg-compute"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Add private SSM endpoints</strong><small>Proposed architecture — not in repository yet</small></span><input type="checkbox" id="cfg-ssm"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Provide NAT egress</strong><small>Hypothetical; existing SG still blocks public HTTPS</small></span><input type="checkbox" id="cfg-nat"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Give EC2 a public IP</strong><small>Hypothetical — violates private-only design</small></span><input type="checkbox" id="cfg-public"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Allow inbound SSH from anywhere</strong><small>Hypothetical — high-risk security change</small></span><input type="checkbox" id="cfg-ssh"><span class="switch-ui"></span></label>
+          </div>
+          <div class="safety-inline">All switches change this browser's model only. The real Terraform configuration, Docker, VM and AWS remain untouched.</div>
+        </div>
+        <div class="result-panel"><div class="result-header"><span>PLAN PREVIEW</span><span id="plan-count" class="count-chip">NO PROPOSED CHANGES</span></div>
+          <div class="result-body"><div id="plan-verdict" class="verdict"></div><h3>What would change?</h3><div id="plan-changes" class="plan-list"></div><h3>Engineering review</h3><div id="plan-analysis" class="analysis-list"></div>
+            <div class="code-heading"><span>SIMULATED CHANGESET / NOT A REAL TERRAFORM PLAN</span></div><pre id="plan-code" class="code-preview"></pre>
+            <div class="review-prompt"><label for="decision-note">Explain the risks and proof you would demand before apply:</label><textarea id="decision-note" rows="3" placeholder="The route is missing because... The security boundary... My proof would be..."></textarea><button type="button" class="outline-btn" id="copy-decision">COPY MY REVIEW NOTES</button><span id="decision-copy-status" role="status" class="micro-message"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="next-cta"><div><small>FROM IDEA TO EVIDENCE</small><strong>A simulation suggests outcomes. The actual emulator proves what the code does.</strong></div><button type="button" class="solid-btn" data-go="real">RUN A LOCAL LAB →</button></div>
+    </section>
+
+    <section class="workview" id="view-real" role="tabpanel" aria-labelledby="tab-real" hidden>
+      <div class="section-heading"><div><div class="eyebrow">03 / ACTUAL LOCAL INFRASTRUCTURE</div><h2>Go beyond the mock. Run the real flow.</h2><p>Execute reviewed commands <em>yourself</em> in a terminal, paste the result, and watch the evidence board update. Nothing executes through the browser.</p></div><span class="side-stamp">LOCAL FLOCI / OPTIONAL KVM</span></div>
+      <div class="live-layout"><div>
+        <div class="safety-banner"><strong>SAFETY BOUNDARY</strong><p>Mock tests need no Docker. Floci stages start containers and provision resources only in a local emulator. Drift deliberately mutates a VPC tag. Review each command before executing. Never supply real AWS credentials.</p></div>
+        <div class="checkpoint-grid"><div class="checkpoint-header"><span>HANDS-ON CHECKPOINTS</span><strong id="checkpoint-progress">0 / 7 VERIFIED</strong></div><div id="checkpoint-nav" class="checkpoint-nav"></div></div>
+        <article class="step-card"><div class="step-meta"><span id="step-number"></span><span id="step-risk"></span></div><h3 id="step-title"></h3><p id="step-explain"></p><div class="command-box"><div class="command-top"><span>RUN MANUALLY · REPOSITORY ROOT</span><button id="copy-command" type="button">COPY COMMAND</button></div><pre id="step-command"></pre></div><label class="field-label" for="step-output">Paste the actual terminal output below to check it:</label><textarea id="step-output" rows="6" placeholder="Paste the result here. This stays in your browser; it is not uploaded."></textarea><div class="step-actions"><button class="solid-btn" id="verify-step" type="button">VALIDATE MY OUTPUT →</button><span id="step-result" role="status"></span></div><p id="step-proof" class="micro-note"></p></article>
+      </div>
+      <aside class="evidence-board"><div class="board-head"><span>LIVE EVIDENCE · FROM YOUR MACHINE</span><span class="board-dot"></span></div><h3>Connect observations, not permissions.</h3><p>Run the optional read-only probe and paste its small JSON output. The browser does not connect to Docker or the VM.</p><div class="command-box compact"><div class="command-top"><span>READ-ONLY PROBE</span><button id="copy-probe" type="button">COPY</button></div><pre id="probe-command">python3 engineering-lab/probe.py</pre></div><label for="probe-input" class="field-label">Paste probe JSON (no credentials):</label><textarea id="probe-input" rows="7" placeholder='{"schema":1,"source":"local-readonly-probe",...}'></textarea><button class="outline-btn full" type="button" id="inspect-probe">INSPECT EVIDENCE →</button><div id="probe-message" class="micro-message" role="status"></div><div class="signal-rows"><div><span>FLOCI API</span><strong id="signal-floci">NOT INSPECTED</strong></div><div><span>KVM GUEST</span><strong id="signal-kvm">NOT INSPECTED</strong></div><div><span>GUEST HTTP /health</span><strong id="signal-health">NOT INSPECTED</strong></div><div><span>OBSERVED AT</span><strong id="signal-at">—</strong></div></div><p class="probe-limits">These are manually supplied local observations. They do not prove production AWS security, and cannot be independently authenticated by a browser-only page.</p></aside></div>
+      <div class="next-cta"><div><small>GO DEEPER</small><strong>Once a system works, can you diagnose why it stops working?</strong></div><button type="button" class="solid-btn" data-go="cases">OPEN INCIDENT DRILLS →</button></div>
+    </section>
+
+    <section class="workview" id="view-cases" role="tabpanel" aria-labelledby="tab-cases" hidden>
+      <div class="section-heading"><div><div class="eyebrow">04 / REAL POSTMORTEMS & ENGINEERING JUDGMENT</div><h2>The evidence doesn't give you the answer.</h2><p>Seven cases drawn from real KVM/CI incidents and Terraform design reviews. Choose a diagnosis, inspect the evidence, then defend the decision.</p></div><div class="case-score"><span>DECISION SCORE</span><strong id="score">00<span class="score-denom">/21</span></strong><small id="progress-text">0 attempted</small></div></div>
+      <nav id="mission-nav" class="case-nav" aria-label="Incident cases"></nav>
+      <div class="cases-layout">
+        <article class="case-paper"><div class="case-topline"><span id="scenario-index">INCIDENT 01 / 07</span><span id="scenario-type"></span><span id="impact"></span></div><div class="case-inner"><div id="track" class="eyebrow"></div><h3 id="scenario-title"></h3><p id="scenario-story"></p><div class="phase-heading"><span id="phase-number">01 / 03</span><div id="phase-steps" class="phase-steps"></div></div>
+          <div id="challenge"><div id="challenge-stage" class="eyebrow"></div><h4 id="question"></h4><div id="options" class="answer-list"></div><div id="feedback" class="answer-feedback" hidden></div><div class="case-actions"><button id="hint-btn" class="outline-btn" type="button">SHOW HINT</button><button id="next-btn" class="solid-btn" type="button" disabled>NEXT DECISION →</button></div><div id="hint" class="hint" hidden></div></div>
+          <section id="debrief" class="debrief" hidden><div class="eyebrow">POSTMORTEM</div><h4>Explain this incident as the engineer.</h4><p id="debrief-text"></p><label class="field-label" for="reflection">What did you observe, decide and verify?</label><textarea id="reflection" rows="5" placeholder="My hypothesis... I ruled out... The proof I would collect..."></textarea><div class="case-actions"><button id="copy-notes" type="button" class="outline-btn">COPY MY NOTES</button><button id="next-mission" type="button" class="solid-btn">NEXT CASE →</button></div><span id="copied" class="micro-message" role="status"></span></section>
+        </div></article>
+        <aside class="case-evidence"><div class="small-cap">FIELD EVIDENCE · RECORDED, NOT LIVE</div><h3>Evidence locker</h3><div id="evidence"></div><div class="small-cap source-heading">PRIMARY SOURCE FILES</div><div id="source-list"></div></aside>
+      </div>
+    </section>
+    <footer class="footer"><strong>TERRAFORM STUDIO</strong><span>Browser simulation ≠ Terraform plan ≠ real AWS. Only terminal commands you explicitly run can alter your own local lab.</span><a href="https://github.com/Mishkaaass/terraform-aws-lab" rel="noopener noreferrer" target="_blank">SOURCE REPOSITORY ↗</a></footer>
   </main>
 </div>
 <div id="fatal" class="fatal" role="alert" hidden></div>
