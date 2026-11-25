@@ -157,7 +157,7 @@
     {id:"apply",purpose:"Create the planned VPC, subnets and IAM in the LOCAL emulator.",impact:"Modifies Floci resources and local Terraform state; Terraform requests terminal confirmation.",expected:"Apply complete appears with resource counts you can independently inspect.",title:"Build the emulated infrastructure",risk:"CHANGES EMULATOR · CONFIRM",desc:"Apply only after reviewing the plan. Terraform asks for confirmation, then creates the VPC/subnets/routes/IAM/SG in Floci.",command:"make local-apply",hint:"Require 'Apply complete!' followed by the managed resource counts.",test:t=>/Apply complete! Resources: \d+ added, \d+ changed, \d+ destroyed\./.test(t),proof:"The apply affects the emulator and local Terraform state, not a real AWS account."},
     {id:"verify",purpose:"Independently query the emulator's resources rather than relying on the apply summary.",impact:"Local AWS CLI read requests only; they target 127.0.0.1:4566.",expected:"Query confirms VPC/subnets/security group. Examine the returned values.",title:"Inspect the control plane independently",risk:"LOCAL EMULATOR · READ",desc:"Query the emulator through AWS CLI. Observe VPC CIDR, subnet placement and security-group ingress rules.",command:"make local-verify",hint:"Look for '[OK] Queried emulated VPC, subnets, and SG via AWS CLI.'",test:t=>/\[OK\] Queried emulated VPC, subnets, and SG via AWS CLI\./.test(t),proof:"An independent API query strengthens evidence beyond Terraform's own output."},
     {id:"drift",purpose:"Observe an out-of-band VPC tag change, then identify and repair only that change.",impact:"Changes a local emulator tag; asks confirmation before applying a guarded repair. An interruption can leave drift.",expected:"PASS reports a narrow fix and a no-change Terraform plan.",title:"Simulate and repair drift",risk:"CHANGES EMULATOR TAG · CONFIRM",desc:"One script changes the local VPC Name tag out of band, requires a narrowly scoped saved plan, asks consent, repairs and verifies zero drift. Inspect it before running.",command:"make local-drift",hint:"Require '[PASS] Drift detected, safety-checked, repaired, and verified: No changes.'",test:t=>/\[PASS\] Drift detected, safety-checked, repaired, and verified: No changes\./.test(t),proof:"The drift script checks a single allowed VPC Name attribute change. It does not modify the real AWS environment."},
-    {id:"guest",purpose:"Optionally inspect a real local Ubuntu KVM VM and its health API.",impact:"Read-only checks for Floci, libvirt and guest HTTP. No SSH or sudo.",expected:"Small JSON with UP/RUNNING/HEALTHY or unknown/unavailable if not present.",title:"Inspect your real Ubuntu VM (optional)",risk:"READ-ONLY · REQUIRES KVM",desc:"Run the local probe for boot state, DHCP lease, guest health and emulator status. Its output contains only fixed categorical fields.",command:"python3 engineering-lab/probe.py",hint:"Paste JSON from the probe, then use 'Inspect evidence' to see categories.",test:t=>Boolean(parseProbeText(t)),proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
+    {id:"guest",purpose:"Inspect the local emulator and, if you have one, an optional real Ubuntu KVM VM.",impact:"Read-only checks for Floci, libvirt and guest HTTP. No SSH or sudo.",expected:"A small JSON object. Floci UP with VM STOPPED and guest health UNKNOWN is a valid snapshot, not a lab failure.",title:"Inspect Floci and optional Ubuntu VM",risk:"READ-ONLY · KVM OPTIONAL",desc:"Run the local probe once. Paste its JSON into the Local Machine Snapshot panel to see the results and complete this output-format checkpoint.",command:"python3 engineering-lab/probe.py",hint:"Paste the JSON into Local Machine Snapshot and click SHOW LOCAL STATUS.",test:t=>Boolean(parseProbeText(t)),proof:"The probe uses only read-only host observations. It doesn't SSH, alter Terraform state or authenticate to AWS."}
   ];
   const validProbe=o=>o&&o.schema===1&&o.source==="local-readonly-probe"&&typeof o.observed_at==="string"&&["up","down","unknown"].includes(o.floci)&&["running","stopped","absent","unknown"].includes(o.vm)&&["healthy","unavailable","unknown"].includes(o.health)&&typeof o.vm_ip==="string"&&o.vm_ip.length<=45&&/^([0-9]{1,3}\.){3}[0-9]{1,3}$|^$/.test(o.vm_ip)&&Object.keys(o).every(k=>["schema","source","observed_at","floci","vm","health","vm_ip"].includes(k));
 
@@ -214,11 +214,25 @@
     $("step-expected").textContent=s.expected;
     $("step-command").textContent=s.command;
     $("step-proof").textContent="WHAT THIS PROVES → "+s.proof;
+    const probeStep=st.step===guestStep;
+    $("step-output-label").hidden=probeStep;
+    $("step-output").hidden=probeStep;
+    $("verify-step").hidden=probeStep;
+    $("probe-step-guide").hidden=!probeStep;
     $("step-output").value=st.steps.get("draft-"+st.step)||"";
-    $("step-result").textContent=st.steps.has(st.step)?"Earlier pasted output contained the expected marker.":"";
+    $("step-result").textContent=st.steps.has(st.step)
+      ? (probeStep?"Optional probe JSON format accepted. This does not prove the VM is healthy.":"Earlier pasted output contained the expected marker.")
+      : "";
     $("step-result").className=st.steps.has(st.step)?"pass":"";
   }
   function verifyStep(){
+    if(st.step===guestStep){
+      const text=$("probe-input").value || $("step-output").value;
+      const observed=parseProbeText(text);
+      if(observed)markProbeObserved(observed,text);
+      else $("step-result").textContent="Paste the JSON output into the Local Machine Snapshot panel, then click SHOW LOCAL STATUS.";
+      return;
+    }
     const t=$("step-output").value.slice(0,20000);st.steps.set("draft-"+st.step,t);
     // Only completed numeric keys count; draft entries are not evidence.
     if(steps[st.step].test(t)) {
@@ -231,32 +245,23 @@
       $("step-result").className="";
     }
     // Preserve the user's pasted output and immediate feedback.
-    renderStepIndicator();
-    [...$("checkpoint-nav").children].forEach((button,i)=>{
-      button.classList.toggle("done",st.steps.has(i));
-      const label=button.querySelector("span");
-      if(label)label.textContent=st.steps.has(i)?"✓":String(i+1).padStart(2,"0");
-    });
+    refreshCheckpointNav();
   }
   function progressCount(){return [...st.steps.keys()].filter(Number.isInteger).length;}
   function renderEvidence(o){
     $("signal-floci").textContent=o.floci.toUpperCase();
-    $("signal-kvm").textContent=o.vm.toUpperCase()+(o.vm_ip?" · "+o.vm_ip:"");
-    $("signal-health").textContent=o.health.toUpperCase();
+    $("signal-kvm").textContent=o.vm.toUpperCase()+(o.vm==="stopped"?" · OPTIONAL":o.vm_ip?" · "+o.vm_ip:"");
+    $("signal-health").textContent=o.health==="unknown"&&o.vm!=="running"?"NOT CHECKED · VM OFF":o.health.toUpperCase();
     $("signal-at").textContent=o.observed_at.slice(0,30);
     for(const [id,val] of [["signal-floci",o.floci],["signal-kvm",o.vm],["signal-health",o.health]]){
-      $(""+id).className=(["up","running","healthy"].includes(val)?"ok":val==="unknown"?"":"warn");
+      $(""+id).className=(["up","running","healthy"].includes(val)?"ok":["unknown","stopped","absent"].includes(val)?"":"warn");
     }
   }
   function inspectProbe(){
     const text=$("probe-input").value.trim();
-    if(text.length>4096){$("probe-message").textContent="PROBE TOO LARGE; ACCEPTS FIXED SCHEMA ONLY";return;}
-    try{
-      const value=JSON.parse(text);
-      if(!validProbe(value))throw new Error("Unexpected schema or status.");
-      renderEvidence(value);
-      $("probe-message").textContent="SCHEMA ACCEPTED · THESE ARE USER-SUPPLIED OBSERVATIONS";
-    }catch(e){$("probe-message").textContent="REJECTED · EXPECTED JSON FROM python3 engineering-lab/probe.py";}
+    const value=parseProbeText(text);
+    if(value)markProbeObserved(value,text);
+    else $("probe-message").textContent="NOT ACCEPTED · Paste the JSON output line from python3 engineering-lab/probe.py (no secrets).";
   }
   function renderStepIndicator(){const n=progressCount();$("checkpoint-progress").textContent=n+" / "+steps.length+" OUTPUTS VALIDATED";}
   function tab(name){
@@ -366,6 +371,10 @@
       $("verify-step").addEventListener("click",verifyStep);
       $("next-checkpoint").addEventListener("click",()=>{st.step=(st.step+1)%steps.length;renderSteps();});
       $("inspect-probe").addEventListener("click",inspectProbe);
+      $("jump-probe").addEventListener("click",()=>{
+        $("probe-input").scrollIntoView({block:"center",behavior:"smooth"});
+        $("probe-input").focus();
+      });
       $("hint-btn").addEventListener("click",()=>{const k=caseKey(st.mission,st.phase);st.hints.has(k)?st.hints.delete(k):st.hints.add(k);renderQuestion()});
       $("next-btn").addEventListener("click",nextQuestion);
       $("next-mission").addEventListener("click",()=>switchCase((st.mission+1)%st.missions.missions.length));
