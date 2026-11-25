@@ -31,10 +31,10 @@ fmt-check:
 	@$(TF) fmt -check -recursive
 
 init-local:
-	@$(TF) -chdir=environments/floci init -input=false
+	@$(TF) -chdir=environments/floci init -input=false -lockfile=readonly
 
 init-aws:
-	@$(TF) -chdir=environments/aws init -backend=false -input=false
+	@$(TF) -chdir=environments/aws init -backend=false -input=false -lockfile=readonly
 
 validate: init-local init-aws
 	@$(TF) -chdir=environments/floci validate
@@ -59,10 +59,10 @@ local-up:
 	@bash scripts/wait-floci.sh
 
 local-plan: local-up init-local
-	@$(TF) -chdir=environments/floci plan
+	@$(TF) -chdir=environments/floci plan -var=enable_compute=false
 
 local-apply: local-up init-local
-	@$(TF) -chdir=environments/floci apply
+	@$(TF) -chdir=environments/floci apply -input=true -var=enable_compute=false
 
 local-verify:
 	@bash scripts/verify-local.sh
@@ -72,7 +72,7 @@ local-drift:
 
 local-destroy: init-local
 	@echo 'CAUTION: local Terraform resources will be deleted after your confirmation.'
-	@$(TF) -chdir=environments/floci destroy
+	@$(TF) -chdir=environments/floci destroy -input=true
 
 local-down:
 	@docker compose down

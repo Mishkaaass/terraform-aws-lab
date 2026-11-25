@@ -42,6 +42,8 @@ def run_json(args: list[str], *, local_aws: bool = False) -> Any:
             "AWS_DEFAULT_REGION": REGION,
             "AWS_EC2_METADATA_DISABLED": "true",
             "AWS_PAGER": "",
+            "NO_PROXY": "127.0.0.1,localhost",
+            "no_proxy": "127.0.0.1,localhost",
         })
     proc = subprocess.run(
         args, cwd=ROOT, env=env, capture_output=True, text=True,

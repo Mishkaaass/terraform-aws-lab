@@ -20,6 +20,8 @@ done
 
 # Scope AWS CLI calls to the loopback emulator, with disposable credentials.
 # This is a child process: it does not change the user's parent shell.
+export NO_PROXY="${NO_PROXY:+$NO_PROXY,}127.0.0.1,localhost"
+export no_proxy="${no_proxy:+$no_proxy,}127.0.0.1,localhost"
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION=us-east-1
