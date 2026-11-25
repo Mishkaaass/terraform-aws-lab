@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-printf '=== TOOLCHAIN ===\n'\nif ! command -v terraform >/dev/null 2>&1 && [ ! -x "$HOME/.local/opt/terraform/$(cat .terraform-version)/terraform" ]; then\n  echo '[MISSING] Terraform (see .terraform-version)'\nfi
-for cmd in terraform docker aws git python3; do
+printf '=== TOOLCHAIN ===\n'
+if bash scripts/terraform.sh version -json >/dev/null 2>&1; then
+  printf '[OK] project Terraform: '
+  bash scripts/terraform.sh version | head -n 1
+else
+  echo '[MISSING/UNSUPPORTED] Terraform 1.17.x (see .terraform-version)'
+fi
+for cmd in docker aws git python3; do
   if command -v "$cmd" >/dev/null 2>&1; then
     case "$cmd" in
-      terraform) printf '[OK] project Terraform: '; bash scripts/terraform.sh version | head -n 1 ;;
       docker) printf '[OK] docker: '; docker --version ;;
       *) printf '[OK] %s\n' "$cmd" ;;
     esac
