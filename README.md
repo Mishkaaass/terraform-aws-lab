@@ -1,7 +1,18 @@
-# Terraform AWS Lab
-**Learn Infrastructure as Code by inspecting, building and debugging a safe local AWS-style network.**
+# Terraform AWS Lab — Infrastructure Engineering Platform
 
-Terraform describes *what should exist*; Floci emulates AWS APIs locally; the browser Studio teaches *why each part exists*. You can understand the architecture **without an AWS account or Docker**. The optional hands-on lab creates actual **emulated API resources**, not production AWS infrastructure.
+**A hands-on Infrastructure as Code platform for designing, testing, and troubleshooting secure AWS-style infrastructure in a safe, reproducible local environment.**
+
+Terraform AWS Lab combines **Terraform, Floci, Docker, Python, GitHub Actions, and an interactive Infrastructure Studio** into a practical learning platform. It demonstrates how engineers design VPC networks, isolate public and private subnets, configure routing and IAM, enforce security controls, detect infrastructure drift, and verify recovery.
+
+Explore the architecture in the browser, experiment with design decisions, and validate real Terraform resource changes against a **local AWS API emulator** — **without an AWS account**. The emulator is not real AWS networking, and the CI pipeline deliberately **does not deploy to AWS**.
+
+*Developed by Moshe Bogo*
+
+[![CI](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml) [![CD: Manual only](https://img.shields.io/badge/CD-manual%20opt--in%20only-lightgrey)](docs/AWS_RUNBOOK.md) [![Release](https://img.shields.io/github/v/release/Mishkaaass/terraform-aws-lab)](https://github.com/Mishkaaass/terraform-aws-lab/releases/latest) [![License: MIT](https://img.shields.io/github/license/Mishkaaass/terraform-aws-lab)](LICENSE)
+
+![Infrastructure Studio — interactive Terraform AWS network topology and component inspector](docs/assets/infrastructure-studio-system-map.png)
+
+*Actual Infrastructure Studio interface — explore the VPC, public/private subnets, routes, security groups, and IAM. The visual topology is educational, not live AWS telemetry.*
 
 ## Start in 60 seconds — choose one
 
