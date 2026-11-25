@@ -1,5 +1,5 @@
 "use strict";
-/* Infrastructure Studio: no privileged browser actions, no client-side persistence,
+/* Infrastructure Studio: non-executing browser experience; no privileged actions, no client-side persistence,
    no arbitrary HTML injection and no external network calls except source-link navigation. */
 (() => {
   const $ = id => document.getElementById(id);
@@ -148,7 +148,7 @@
     steps.forEach((s,i)=>{const b=click("","checkpoint"+(i===st.step?" active":"")+(st.steps.has(i)?" done":""),()=>{st.step=i;renderSteps()});
       b.append(el("span","",st.steps.has(i)?"✓":String(i+1).padStart(2,"0")),document.createTextNode(s.id.toUpperCase()));nav.append(b);
     });
-    $("checkpoint-progress").textContent=st.steps.size+" / "+steps.length+" OUTPUTS VALIDATED";
+    $("checkpoint-progress").textContent=progressCount()+" / "+steps.length+" OUTPUTS VALIDATED";
     const s=steps[st.step];
     $("step-number").textContent="CHECKPOINT "+String(st.step+1).padStart(2,"0")+" / "+steps.length;
     $("step-risk").textContent=s.risk;
@@ -172,7 +172,7 @@
       $("step-result").textContent="NOT VERIFIED · "+steps[st.step].hint;
       $("step-result").className="";
     }
-    renderSteps();
+    renderSteps();renderStepIndicator();
   }
   function progressCount(){return [...st.steps.keys()].filter(Number.isInteger).length;}
   function renderEvidence(o){
