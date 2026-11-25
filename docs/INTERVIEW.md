@@ -8,7 +8,7 @@
 4. **Automation and security (60s):** `make test` validates HCL using mocked AWS provider; `make doctor` checks the host. Show EC2 disabled by default, no public IP or inbound SG, IMDSv2 and encrypted EBS configuration.
 5. **Real API evidence (60s):** `make local-plan`, then **only if already deployed** `make local-verify`. The verifier reads Floci APIs and **fails** on incorrect routing, CIDRs, AZs, public IP assignment, ingress/egress or IAM policy. `No changes` is a good Terraform result; never apply only for visual impact.
 6. **Incident response (60s):** show `make local-drift` evidence from a prior local run, or perform the explicitly consented drill in a disposable emulator. Explain Terraform exit codes 0 (no diff) and 2 (diff), a narrowly scoped saved plan and restoration.
-7. **CI and limitations (30–60s):** open the five checks: Terraform tests, Floci apply/verify/drift/destroy, static VM checks, Trivy and Gitleaks. No AWS deploy credentials. Floci emulates **APIs**, not real AWS isolation or IAM behavior; SSM endpoints, remote state, real production monitoring and cost controls are out of scope.
+7. **CI and limitations (30–60s):** open the six CI checks: Terraform tests, Floci apply/verify/drift/destroy, static VM checks, Trivy and Gitleaks. The Studio reproducibility check builds a non-root Docker image and tests the .venv path. No AWS deploy credentials. Floci emulates **APIs**, not real AWS isolation or IAM behavior; SSM endpoints, remote state, real production monitoring and cost controls are out of scope.
 
 ## Be ready to explain
 
