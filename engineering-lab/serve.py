@@ -7,6 +7,8 @@ This process has no AWS, Docker or libvirt privileges and never runs commands.
 from __future__ import annotations
 
 import argparse
+import errno
+import http.client
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -92,6 +94,26 @@ class LabHandler(SimpleHTTPRequestHandler):
         return
 
 
+def existing_studio_is_healthy(port: int) -> bool:
+    """Recognize our own safe Studio on localhost. Never trust mere port use."""
+    try:
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
+        try:
+            connection.request("GET", "/", headers={"Host": f"127.0.0.1:{port}"})
+            response = connection.getresponse()
+            return (
+                response.status == HTTPStatus.OK
+                and response.getheader("Server", "").startswith("InfrastructureLab")
+                and response.getheader("Content-Security-Policy") == CSP
+                and response.getheader("X-Frame-Options") == "DENY"
+                and b"Infrastructure Studio" in response.read(12000)
+            )
+        finally:
+            connection.close()
+    except (OSError, http.client.HTTPException):
+        return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Serve only public Engineering Lab assets on localhost")
     parser.add_argument("--port", type=int, default=8765)
@@ -100,10 +122,19 @@ def main() -> int:
         parser.error("Port must be 1024-65535")
     try:
         with ThreadingHTTPServer(("127.0.0.1", args.port), LabHandler) as httpd:
-            print(f"Infrastructure Failure Lab: http://127.0.0.1:{args.port}/", flush=True)
+            print(f"Infrastructure Studio: http://127.0.0.1:{args.port}/", flush=True)
             print("Only the four public UI assets can be served. Ctrl+C stops.", flush=True)
             httpd.serve_forever(poll_interval=0.4)
     except OSError as error:
+        if error.errno == errno.EADDRINUSE:
+            if existing_studio_is_healthy(args.port):
+                print(f"[REUSE] Infrastructure Studio already running: http://127.0.0.1:{args.port}/")
+                print("Open that address and refresh. No second server needed.")
+                return 0
+            parser.exit(
+                1, f"[BLOCK] Port {args.port} is used by another service. "
+                f"Inspect the listener or try: python3 engineering-lab/serve.py --port {args.port + 1}\n"
+            )
         parser.exit(1, f"Unable to bind the local server: {error}\n")
     except KeyboardInterrupt:
         return 0
