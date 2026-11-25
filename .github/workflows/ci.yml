@@ -38,11 +38,55 @@ jobs:
         run: terraform -chdir=environments/aws validate -no-color
       - name: Local safety check
         run: bash scripts/check.sh
-      - name: Engineering Dojo content, static HTTP security and source-reference tests
+      - name: Reviewer requirements and project .venv (no pip downloads)
+        run: |
+          bash scripts/requirements.sh
+          make setup
+          .venv/bin/python -c 'import sys,venv; assert sys.prefix != sys.base_prefix'
+      - name: Engineering Studio isolated Python tests and source-reference tests
         run: |
           bash -n engineering-lab/security-preflight.sh
           bash -n engineering-lab/doctor.sh
-          python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v
+          bash -n scripts/setup-studio.sh scripts/requirements.sh scripts/publish-release.sh
+          .venv/bin/python -m unittest discover -s engineering-lab -p 'test_*.py' -v
+          .venv/bin/python -m unittest discover -s scripts -p 'test_*.py' -v
+
+  studio-container:
+    name: Studio Docker reproducibility / static security smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout without persisting credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate isolated Studio Compose profile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose --profile studio config --quiet
+          grep -qxF '*' .dockerignore
+          test -z "${AWS_ACCESS_KEY_ID:-}"
+      - name: Build and run pinned browser-only Docker Studio
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker compose --profile studio up --build -d studio
+          for n in $(seq 1 25); do
+            if curl --noproxy '*' -fsS --max-time 2 http://127.0.0.1:8765/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --noproxy '*' -fsSI http://127.0.0.1:8765/ | grep -qi 'content-security-policy:'
+          curl --noproxy '*' -fsS http://127.0.0.1:8765/ | grep -q 'Infrastructure Studio'
+          test "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/.git/config)" = 404
+          test "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/terraform.tfstate)" = 404
+          test -z "$(docker compose --profile studio ps -q floci)"
+          echo '[PASS] Docker Studio started without Floci and sensitive paths are blocked.'
+      - name: Clean up disposable Studio
+        if: ${{ always() }}
+        run: docker compose --profile studio down --remove-orphans
 
   iac-security:
     name: Trivy IaC security scan
@@ -130,6 +174,13 @@ jobs:
           echo '=== EXPECTED: No changes ==='
           terraform -chdir=environments/floci plan -input=false -no-color -detailed-exitcode | tail -n 14
           echo '[PASS] Applied infrastructure matches the desired configuration.'
+      - name: Exercise guarded out-of-band drift, repair and re-verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'yes\n' | make local-drift
+          bash scripts/verify-local.sh
+          echo '[PASS] Safe Floci drift drill and architecture invariants verified.'
       - name: Destroy emulated resources and verify empty state
         shell: bash
         run: |

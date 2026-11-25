@@ -1,0 +1,11 @@
+# Deny-by-default build context: Docker never receives state, Git metadata,
+# credentials, local .venv, CI reports or anything outside the four UI assets.
+*
+!docker/
+!docker/studio.Dockerfile
+!engineering-lab/
+!engineering-lab/serve.py
+!engineering-lab/index.html
+!engineering-lab/style.css
+!engineering-lab/app.js
+!engineering-lab/missions.json

@@ -22,3 +22,9 @@ reports/
 .DS_Store
 *.swp
 *.swo
+
+# Reproducible local Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/

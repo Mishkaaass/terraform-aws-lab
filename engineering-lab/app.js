@@ -366,7 +366,9 @@
       $("copy-decision").addEventListener("click",()=>copy("INFRASTRUCTURE STUDIO DESIGN REVIEW\n"+$("plan-code").textContent+"\nReview: "+$("decision-note").value,$("decision-copy-status")));
       $("copy-command").addEventListener("click",()=>copy(steps[st.step].command,$("step-result")));
       $("copy-probe").addEventListener("click",()=>copy($("probe-command").textContent,$("probe-message")));
-      $("copy-doctor").addEventListener("click",()=>copy("bash engineering-lab/doctor.sh",$("step-result")));
+      $("copy-requirements").addEventListener("click",()=>copy("make requirements",$("step-result")));
+      $("copy-setup").addEventListener("click",()=>copy("make setup",$("step-result")));
+      $("copy-doctor").addEventListener("click",()=>copy("make doctor",$("step-result")));
       $("step-output").addEventListener("input",()=>st.steps.set("draft-"+st.step,$("step-output").value.slice(0,20000)));
       $("verify-step").addEventListener("click",verifyStep);
       $("next-checkpoint").addEventListener("click",()=>{st.step=(st.step+1)%steps.length;renderSteps();});

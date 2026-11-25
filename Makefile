@@ -1,13 +1,22 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 TF := bash scripts/terraform.sh
-.PHONY: help studio doctor check fmt fmt-check init-local init-aws validate test local-up local-plan local-apply local-verify local-drift local-destroy local-down local-ec2-plan aws-plan aws-apply aws-destroy
+.PHONY: help requirements setup studio studio-docker publish-release doctor check fmt fmt-check init-local init-aws validate test local-up local-plan local-apply local-verify local-drift local-destroy local-down local-ec2-plan aws-plan aws-apply aws-destroy
 
 help:
-	@printf '%s\n' 'START HERE:' '  make studio           - launch browser learning experience (Python 3 only)' '  make doctor           - check tools and local state (read-only)' '  make test             - Terraform mock tests (no Docker or AWS)' '' 'LOCAL FLOCI (OPTIONAL):' '  make local-up         - reuse existing emulator, or start with Docker' '  make local-plan       - inspect proposed changes' '  make local-apply      - changes emulator/state; asks approval' '  make local-verify     - inspect the local AWS API' '  make local-drift      - local out-of-band tag change and repair drill' '' 'MORE:' '  make check            - toolchain and security checks' '  make fmt-check        - verify Terraform formatting' '  make validate         - validate Terraform roots' '  make local-down       - stop emulator; no volume deletion' '  make local-destroy    - destructive emulator cleanup, interactive' '  make aws-plan         - only after AWS sandbox safeguards' '' 'Run make help to see this list again.'
+	@printf '%s\n' 'START HERE:' '  make requirements     - check prerequisites without changing anything' '  make setup            - create/reuse .venv (no external Python packages)' '  make studio           - automatically use .venv for browser Studio' '  make studio-docker    - alternate isolated browser-only container (Docker needed)' '  make doctor           - check tools and local state (read-only)' '  make test             - Terraform mock tests (no Docker or AWS)' '' 'LOCAL FLOCI (OPTIONAL):' '  make local-up         - reuse existing emulator, or start with Docker' '  make local-plan       - inspect proposed changes' '  make local-apply      - changes emulator/state; asks approval' '  make local-verify     - inspect the local AWS API' '  make local-drift      - local out-of-band tag change and repair drill' '' 'MORE:' '  make check            - toolchain and security checks' '  make fmt-check        - verify Terraform formatting' '  make validate         - validate Terraform roots' '  make local-down       - stop emulator; no volume deletion' '  make local-destroy    - destructive emulator cleanup, interactive' '  make aws-plan         - only after AWS sandbox safeguards' '  make publish-release  - GitHub v1.0.0 release (requires 6 green checks and explicit consent)' '' 'Run make help to see this list again.'
 
-studio:
-	@python3 engineering-lab/serve.py
+requirements:
+	@bash scripts/requirements.sh
+
+setup:
+	@bash scripts/setup-studio.sh
+
+studio: setup
+	@.venv/bin/python engineering-lab/serve.py
+
+studio-docker:
+	@docker compose --profile studio up --build studio
 
 doctor:
 	@bash engineering-lab/doctor.sh
@@ -80,3 +89,6 @@ aws-apply:
 
 aws-destroy:
 	@bash scripts/aws-command.sh destroy
+
+publish-release:
+	@bash scripts/publish-release.sh

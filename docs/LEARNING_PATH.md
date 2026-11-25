@@ -3,7 +3,7 @@
 Use this order. First inspect a plan, then apply locally, then simulate failure and recover. Each exercise gives you a story for an interview.
 
 ## Lab 1 — Terraform execution model (10-15 focused steps)
-1. `terraform -version` and `make fmt-check`: formatter != validator.
+1. `bash scripts/terraform.sh version` and `make fmt-check`: formatter != validator.
 2. `make test`: examine `mock_provider "aws"` in `environments/floci/tests`.
 3. `make local-up` then `make local-plan`: identify `+ create` resource types.
 4. Explain **provider → module → resource → state → plan** aloud.
@@ -30,11 +30,11 @@ Use this order. First inspect a plan, then apply locally, then simulate failure 
 **Question:** why is an IAM role preferable to a permanent access key stored on the instance? Short-lived credentials, rotation and better auditability.
 
 ## Lab 4 — CI, security and failure drills
-1. Push via a PR, inspect both CI jobs (`terraform` and `iac-security`).
+1. Push via a PR and inspect all six CI jobs: Terraform/venv, Floci apply-verify-drift-destroy, Docker Studio, libvirt validation, Trivy and Gitleaks.
 2. Intentionally change IMDSv2 to optional on a separate practice branch; tests should reject it.
 3. Revert, restore green CI, and explain what the security gate protects.
-4. Run `terraform plan` twice after an apply; verify zero changes (idempotency).
+4. Run `make local-plan` twice after an apply; verify zero changes (idempotency).
 5. Run `make local-drift` for a guarded out-of-band VPC tag change, strict plan inspection, interactive repair, and proof of restored idempotency. Never perform this against production AWS.
-6. Run `make local-destroy` and `make local-down` after documenting evidence.
+6. On a disposable emulator only, inspect the plan before optionally using `make local-destroy` and `make local-down`. Never delete an existing state to hide drift.
 
 **Interview challenge:** explain why no AWS creds exist in Actions, why `apply` is manual, and why emulation can't prove real production behavior.
