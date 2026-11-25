@@ -27,6 +27,16 @@
       <div class="issue-stamp"><div class="stamp-label">ENGINEERING NOTEBOOK</div><strong>02<span>/</span>04</strong><div class="stamp-base">TERRAFORM · FLOCI · LIBVIRT</div><div class="stamp-mini">REV 02 — LEARN BY DOING</div></div>
     </section>
 
+    <section class="first-run" aria-label="First time visitor: how to learn">
+      <div class="first-run-title"><span>YOUR FIRST 5 MINUTES</span><h2>New to infrastructure? Start here.</h2><p>Terraform describes infrastructure. Floci acts as a local AWS API. This page teaches how they fit together. <strong>No account or installation needed to explore.</strong></p></div>
+      <div class="first-run-steps">
+        <button type="button" data-go="map"><span>01 · LOOK</span><strong>Click the architecture</strong><small>See why VPC, routes, subnets, IAM and security groups exist.</small></button>
+        <button type="button" data-go="design"><span>02 · EXPERIMENT</span><strong>Try Example 1</strong><small>Change a design in the browser. No infrastructure changes.</small></button>
+        <button type="button" data-go="real"><span>03 · PROVE IT</span><strong>Start with make doctor</strong><small>Use a second terminal only if you want the real local lab.</small></button>
+      </div>
+      <div class="first-run-bottom">Remember: <strong>System Map = explanation</strong> · <strong>Design Sandbox = simulation</strong> · <strong>Real Lab = terminal commands you run</strong></div>
+    </section>
+
     <nav class="tabs" role="tablist" aria-label="Lab workspaces">
       <button class="tab active" type="button" role="tab" id="tab-map" aria-controls="view-map" aria-selected="true" data-tab="map"><span>01</span> SYSTEM MAP</button>
       <button class="tab" type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="false" data-tab="design"><span>02</span> DESIGN SANDBOX</button>
@@ -83,7 +93,7 @@
         </div>
         <div class="result-panel"><div class="result-header"><span>WHAT-IF RESULTS · SIMULATION, NOT TERRAFORM PLAN</span><span id="plan-count" class="count-chip">NO PROPOSED CHANGES</span></div>
           <div class="result-body"><div class="result-guide"><strong>READ THIS SIDE AFTER CHOOSING</strong><p>Does the design work? What is missing? Would you approve the change? None of this is deployed.</p></div><div id="plan-verdict" class="verdict" aria-live="polite"></div><h3>What did your choices propose?</h3><div id="plan-changes" class="plan-list"></div><h3>What should you learn from this?</h3><div id="plan-analysis" class="analysis-list"></div>
-            <details class="advanced-code"><summary>Curious? View the simulated values (advanced)</summary><p>These values are a teaching illustration, not a real plan or Terraform configuration file.</p><pre id="plan-code" class="code-preview"></pre></details>
+            <details class="advanced-code"><summary>Curious? Read the scenario settings (advanced)</summary><p>These are labels for this simulation, NOT commands or Terraform files. Never paste them into a shell.</p><div id="plan-code" class="settings-preview"></div></details>
             <div class="review-prompt"><label for="decision-note">Can you explain the result in one sentence? What would you check before approving the design?</label><textarea id="decision-note" rows="3" placeholder="The route is missing because... The security boundary... My proof would be..."></textarea><button type="button" class="outline-btn" id="copy-decision">COPY MY REVIEW NOTES</button><span id="decision-copy-status" role="status" class="micro-message"></span></div>
           </div>
         </div>
@@ -106,8 +116,8 @@
         <article><span>READY FOR A CHALLENGE?</span><strong>Try checkpoint 6</strong><p>Deliberately change a local VPC tag, detect the drift, then approve a guarded repair.</p></article>
       </div>
       <div class="live-layout"><div>
-        <div class="doctor-box"><div><strong>STEP ZERO · CHECK YOUR MACHINE FIRST</strong><p>Before copying any checkpoint, run this read-only diagnostic. It checks your Terraform version, Docker permissions, whether Floci still contains the VPC recorded in Terraform state, and optional VM status. Any <b>[BLOCK]</b> means stop and review the setup first.</p></div><div class="doctor-command"><code>bash engineering-lab/doctor.sh</code><button id="copy-doctor" type="button" class="outline-btn">COPY CHECK</button></div><p>Do not paste the simulated values from Design Sandbox into a terminal. They are illustrations, not Linux commands.</p></div>
-        <div class="safety-banner"><strong>BEFORE YOU START</strong><p>Only checkpoint 1 needs Terraform. Steps 2–6 require Docker, and steps 5–6 also need AWS CLI. Checkpoint 7 is an optional read-only check for a locally installed KVM VM. <strong>Apply and drift change the local emulator and Terraform state.</strong> Use a personal test environment, read the plan and never paste passwords, tokens or private keys.</p></div>
+        <div class="doctor-box"><div><strong>STEP ZERO · CHECK YOUR MACHINE FIRST</strong><p>Before copying any checkpoint, run this read-only diagnostic. It checks your Terraform version, Docker permissions, whether Floci still contains the VPC recorded in Terraform state, and optional VM status. Any <b>[BLOCK]</b> means stop and review the setup first.</p></div><div class="doctor-command"><code>bash engineering-lab/doctor.sh</code><button id="copy-doctor" type="button" class="outline-btn">COPY CHECK</button></div><p>Do not paste Design Sandbox settings into a terminal; they are simulation labels, not Linux commands. If the diagnostic says BLOCK, stop and inspect before any apply.</p></div>
+        <div class="safety-banner"><strong>BEFORE YOU START</strong><p>Checkpoint 1 needs Terraform 1.17.x; project commands select a compatible installed version automatically. Steps 2–6 use local Floci: Docker access is needed only to START it, not to reuse a healthy running emulator. Steps 5–6 also need AWS CLI. Checkpoint 7 is optional; a stopped KVM guest is normal. <strong>Apply and drift change the local emulator and Terraform state.</strong> Use a personal test environment, read the plan and never paste passwords, tokens or private keys. <strong>Already deployed? “No changes” is success — do not reapply just to tick a box.</strong></p></div>
         <div class="checkpoint-grid"><div class="checkpoint-header"><span>HANDS-ON CHECKPOINTS</span><strong id="checkpoint-progress">0 / 7 OUTPUT MARKERS MATCHED</strong></div><div id="checkpoint-nav" class="checkpoint-nav"></div></div>
         <article class="step-card"><div class="step-meta"><span id="step-number"></span><span id="step-risk"></span></div><h3 id="step-title"></h3><p id="step-explain"></p>
           <div class="step-explained">
