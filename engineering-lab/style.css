@@ -134,3 +134,19 @@ textarea{border:1px solid #c8d2c8;border-radius:0;background:#fffefa;padding:13p
 .doctor-command{display:flex;gap:15px;align-items:center;justify-content:space-between;margin-top:17px;padding:12px 15px;background:#fff;border:1px solid #cbd8cd}
 .doctor-command code{font:12px var(--mono);overflow-wrap:anywhere}
 @media(max-width:600px){.doctor-command{align-items:stretch;flex-direction:column}}
+
+/* First-run guide: short, distinct from the technical workspace. */
+.first-run{display:grid;grid-template-columns:minmax(245px,.7fr) minmax(0,1.3fr);gap:16px 30px;border:1px solid #c6d6cc;background:#edf3ed;padding:23px 25px;margin:0 0 23px}
+.first-run-title>span{font:700 10px var(--mono);letter-spacing:.1em;color:var(--green)}
+.first-run-title h2{font:27px/1.15 var(--serif);margin:10px 0}
+.first-run-title p{margin:0;color:var(--ink2);font-size:13px}
+.first-run-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.first-run-steps button{border:1px solid #bfcfc2;background:#fffefa;text-align:left;padding:15px;color:var(--ink)}
+.first-run-steps button:hover,.first-run-steps button:focus-visible{border-color:var(--accent);background:#fdf3ea}
+.first-run-steps span{display:block;font:700 10px var(--mono);color:var(--accent);margin-bottom:9px}
+.first-run-steps strong{display:block;font:19px/1.2 var(--serif);margin-bottom:8px}
+.first-run-steps small{display:block;font-size:12px;color:var(--ink2);line-height:1.4}
+.first-run-bottom{grid-column:1/-1;border-top:1px solid #cbd9ce;padding-top:11px;font:11px/1.5 var(--mono);color:var(--ink2)}
+.settings-preview{font:12px/1.7 var(--mono);white-space:pre-line;color:var(--ink2);margin:11px 0;background:#eaf1e8;border-left:3px solid var(--green);padding:15px;overflow-wrap:anywhere}
+@media(max-width:1050px){.first-run{grid-template-columns:1fr}}
+@media(max-width:650px){.first-run{padding:18px}.first-run-steps{grid-template-columns:1fr}}
