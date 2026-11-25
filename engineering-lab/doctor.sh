@@ -53,7 +53,12 @@ if [ -f environments/floci/terraform.tfstate ] && command -v terraform >/dev/nul
       echo "[INFO] Stop before verify/drift/apply; do not delete state or run destroy."
     fi
   else
-    echo "[INFO] No readable VPC output or AWS CLI; cannot compare with Floci."
+    if [ -z "$vpc" ]; then
+      echo "[BLOCK] Current Terraform workspace has no VPC output. Check workspace and state list."
+      echo "[INFO] Do not apply/destroy until you understand the current state."
+    else
+      echo "[INFO] No valid VPC output or AWS CLI; cannot compare with Floci."
+    fi
   fi
 else
   echo "[INFO] No initialized local state or Terraform binary; nothing to compare."
