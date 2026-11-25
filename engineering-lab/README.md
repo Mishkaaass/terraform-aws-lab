@@ -35,9 +35,9 @@ Open a **second terminal in the project root**. For each checkpoint, read its pu
 | **4. Apply** | `make local-apply` | **Changes local emulator/state** after manual review |
 | **5. Verify** | `make local-verify` | Local AWS CLI query of actual emulated resources |
 | **6. Drift drill** | `make local-drift` | **Changes local VPC Name tag**, guarded, repairs with consent |
-| **7. Optional KVM** | `python3 engineering-lab/probe.py` | Read-only observation of Floci + independent Ubuntu guest |
+| **7. Optional KVM** | `python3 engineering-lab/probe.py` | Paste JSON once into **Local Machine Snapshot**, click **SHOW LOCAL STATUS**; schema acceptance also completes Checkpoint 7 even when the VM is stopped |
 
-**If a command says `No changes`**: that is a good result. You already have matching infrastructure; do not repeatedly apply just to score UI checkpoints. If `make doctor` reports a stale VPC/state mismatch, stop and inspect a plan first.
+**Checkpoint 7 is optional.** `vm: stopped` with `health: unknown` is normal when no Ubuntu VM is running. A valid read-only JSON snapshot is accepted; it does not prove that the guest is healthy. Copy only the JSON output (the terminal prompt may also be included); there is one input panel, not two.\n\n**If a command says `No changes`**: that is a good result. You already have matching infrastructure; do not repeatedly apply just to score UI checkpoints. If `make doctor` reports a stale VPC/state mismatch, stop and inspect a plan first.
 
 ### What happens behind the scenes?
 

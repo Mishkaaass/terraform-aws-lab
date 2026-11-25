@@ -24,6 +24,8 @@ Open **http://127.0.0.1:8765/**. Keep the terminal running; stop with `Ctrl+C`. 
 | **3 · Run the Real Lab** | Read **Step Zero**; then run Checkpoint 1 in a second terminal | How to test and observe Terraform safely |
 | **4 · Incident Cases** | Diagnose a failure using recorded logs and source | How to reason from evidence |
 
+**Optional last checkpoint:** If `probe.py` reports `floci: up`, `vm: stopped` and `health: unknown`, that's a valid read-only observation; the Ubuntu KVM guest is optional. Paste that JSON into **Local Machine Snapshot** and click **SHOW LOCAL STATUS** to validate the format and complete Checkpoint 7. This does not claim the VM is healthy.
+
 The **Design Sandbox changes only a browser simulation**. Its example values are **not shell commands**. The Studio does not run Terraform, Docker or AWS commands for you.
 
 ## The architecture — what are we building?
