@@ -45,7 +45,8 @@ if [ -f environments/floci/terraform.tfstate ] && command -v terraform >/dev/nul
   vpc="$("$tf" -chdir=environments/floci output -raw vpc_id 2>/dev/null || true)"
   if [[ "$vpc" =~ ^vpc-[a-zA-Z0-9]+$ ]] && command -v aws >/dev/null 2>&1; then
     # Child-process-only fake credentials; AWS CLI always has localhost endpoint.
-    if env -u AWS_PROFILE -u AWS_SESSION_TOKEN -u AWS_ROLE_ARN -u AWS_WEB_IDENTITY_TOKEN_FILE AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true aws --no-cli-pager --endpoint-url http://127.0.0.1:4566 ec2 describe-vpcs --vpc-ids "$vpc" --query 'Vpcs[0].VpcId' --output text >/dev/null 2>&1; then
+    observed="$(env -u AWS_PROFILE -u AWS_SESSION_TOKEN -u AWS_ROLE_ARN -u AWS_WEB_IDENTITY_TOKEN_FILE AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true aws --no-cli-pager --endpoint-url http://127.0.0.1:4566 ec2 describe-vpcs --vpc-ids "$vpc" --query 'Vpcs[0].VpcId' --output text 2>/dev/null || true)"
+    if [ "$observed" = "$vpc" ]; then
       echo "[OK] State VPC is present in local Floci."
     else
       echo "[BLOCK] State references a VPC that local Floci cannot return."
