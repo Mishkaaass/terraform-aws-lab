@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import errno
 import http.client
+import os
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -115,13 +116,18 @@ def existing_studio_is_healthy(port: int) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Serve only public Engineering Lab assets on localhost")
+    parser = argparse.ArgumentParser(description="Serve the four public Infrastructure Studio assets; host binds loopback")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--bind", choices=("127.0.0.1", "0.0.0.0"), default="127.0.0.1")
     args = parser.parse_args()
+    # 0.0.0.0 is only for the isolated Docker image; Compose publishes to
+    # 127.0.0.1 on the host. The normal venv route is loopback-only.
+    if args.bind != "127.0.0.1" and os.environ.get("INFRA_STUDIO_CONTAINER") != "1":
+        parser.error("Non-loopback binding is reserved for the isolated Docker Studio.")
     if not 1024 <= args.port <= 65535:
         parser.error("Port must be 1024-65535")
     try:
-        with ThreadingHTTPServer(("127.0.0.1", args.port), LabHandler) as httpd:
+        with ThreadingHTTPServer((args.bind, args.port), LabHandler) as httpd:
             print(f"Infrastructure Studio: http://127.0.0.1:{args.port}/", flush=True)
             print("Only the four public UI assets can be served. Ctrl+C stops.", flush=True)
             httpd.serve_forever(poll_interval=0.4)
