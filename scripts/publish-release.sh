@@ -10,7 +10,20 @@ TAG="v1.0.0"
 for tool in git gh python3; do
   command -v "$tool" >/dev/null 2>&1 || { echo "[BLOCK] Missing $tool" >&2; exit 2; }
 done
-gh auth status >/dev/null
+# gh auth status can exit nonzero when an INACTIVE account has an expired
+# credential, even if the active account has valid access. Verify the actual
+# API identity instead; fail closed if the selected token belongs to someone
+# other than the expected repository owner.
+if ! ACTIVE_USER="$(GH_HOST=github.com gh api user --jq .login 2>/dev/null)"; then
+  echo '[BLOCK] GitHub CLI cannot reach github.com API using its active credentials.' >&2
+  echo '[INFO] Check the active account with: gh auth status -h github.com' >&2
+  exit 2
+fi
+if [[ "$ACTIVE_USER" != "Mishkaaass" ]]; then
+  echo "[BLOCK] GitHub CLI is using $ACTIVE_USER, expected Mishkaaass. No changes made." >&2
+  exit 2
+fi
+echo "[OK] Active GitHub API identity: $ACTIVE_USER"
 [[ "$(gh repo view --json nameWithOwner --jq .nameWithOwner)" == "$REPO" ]] || {
   echo "[BLOCK] Current GitHub repo is not $REPO" >&2; exit 2;
 }
