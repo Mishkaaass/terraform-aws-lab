@@ -47,6 +47,17 @@ class ReviewerRuntimeContract(TestCase):
         self.assertIn('127.0.0.1:8765:8765',compose)
         self.assertIn("read_only: true",compose)
 
+    def test_release_publisher_is_manual_and_gated(self) -> None:
+        pub=(ROOT/"scripts/publish-release.sh").read_text()
+        mk=(ROOT/"Makefile").read_text()
+        self.assertIn("publish-release:",mk)
+        self.assertIn("check-runs?per_page=100",pub)
+        self.assertIn("git fetch --quiet origin main",pub)
+        self.assertIn("publish v1.0.0",pub)
+        self.assertIn("gh release create",pub)
+        for forbidden in ("terraform destroy", "docker compose down", "-auto-approve"):
+            self.assertNotIn(forbidden,pub)
+
     def test_nonloopback_server_is_rejected_outside_container(self) -> None:
         from contextlib import redirect_stderr
         from io import StringIO
