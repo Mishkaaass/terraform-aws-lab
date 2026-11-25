@@ -55,6 +55,9 @@ class ReviewerRuntimeContract(TestCase):
         self.assertIn("git fetch --quiet origin main",pub)
         self.assertIn("publish v1.0.0",pub)
         self.assertIn("gh release create",pub)
+        self.assertIn("GH_HOST=github.com gh api user --jq .login", pub)
+        self.assertIn('[[ "$ACTIVE_USER" != "Mishkaaass" ]]', pub)
+        self.assertNotIn("gh auth status >/dev/null", pub)
         for forbidden in ("terraform destroy", "docker compose down", "-auto-approve"):
             self.assertNotIn(forbidden,pub)
 
