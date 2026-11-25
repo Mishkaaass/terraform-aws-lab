@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Infrastructure Studio — explore a real Terraform architecture, simulate engineering decisions, and validate a local lab.">
+  <title>Infrastructure Studio · Terraform AWS Lab</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
+<div class="app">
+  <header class="masthead">
+    <a class="wordmark" href="#workspace" aria-label="Infrastructure Studio home"><span class="mark">T<span>·</span></span><span class="brand-name">TERRAFORM<span class="brand-thin">STUDIO</span><small>INFRASTRUCTURE, EXPLAINED</small></span></a>
+    <div class="header-right"><span class="edition">OPEN ENGINEERING LAB <b>002</b></span><a class="repo-link" href="https://github.com/Mishkaaass/terraform-aws-lab" target="_blank" rel="noopener noreferrer">VIEW SOURCE <span aria-hidden="true">↗</span></a></div>
+  </header>
+
+  <main id="workspace" class="wrap">
+    <section class="intro">
+      <div class="intro-copy"><div class="overline"><span class="overline-rule"></span> BUILD IT. BREAK THE ASSUMPTION. PROVE IT.</div>
+        <h1>See the system.<br><span>Think like its engineer.</span></h1>
+        <p>Not just multiple choice. Explore the actual architecture, change a design, predict the outcome, then validate real local infrastructure with evidence.</p>
+        <div class="intro-flags"><span><i class="dot"></i> No AWS account required for playground</span><span><i class="dot"></i> Terminal commands never run from this page</span></div>
+      </div>
+      <div class="issue-stamp"><div class="stamp-label">ENGINEERING NOTEBOOK</div><strong>02<span>/</span>04</strong><div class="stamp-base">TERRAFORM · FLOCI · LIBVIRT</div><div class="stamp-mini">REV 02 — LEARN BY DOING</div></div>
+    </section>
+
+    <section class="first-run" aria-label="First time visitor: how to learn">
+      <div class="first-run-title"><span>YOUR FIRST 5 MINUTES</span><h2>New to infrastructure? Start here.</h2><p>Terraform describes infrastructure. Floci acts as a local AWS API. This page teaches how they fit together. <strong>No AWS account or Docker needed; Python 3 starts the Studio.</strong></p></div>
+      <div class="first-run-steps">
+        <button type="button" data-go="map"><span>01 · LOOK</span><strong>Click the architecture</strong><small>See why VPC, routes, subnets, IAM and security groups exist.</small></button>
+        <button type="button" data-go="design"><span>02 · EXPERIMENT</span><strong>Try Example 1</strong><small>Change a design in the browser. No infrastructure changes.</small></button>
+        <button type="button" data-go="real"><span>03 · PROVE IT</span><strong>Start with make doctor</strong><small>Use a second terminal only if you want the real local lab.</small></button>
+      </div>
+      <div class="first-run-bottom">Remember: <strong>System Map = explanation</strong> · <strong>Design Sandbox = simulation</strong> · <strong>Real Lab = terminal commands you run</strong></div>
+    </section>
+
+    <nav class="tabs" role="tablist" aria-label="Lab workspaces">
+      <button class="tab active" type="button" role="tab" id="tab-map" aria-controls="view-map" aria-selected="true" data-tab="map"><span>01</span> SYSTEM MAP</button>
+      <button class="tab" type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="false" data-tab="design"><span>02</span> DESIGN SANDBOX</button>
+      <button class="tab" type="button" role="tab" id="tab-real" aria-controls="view-real" aria-selected="false" data-tab="real"><span>03</span> RUN THE REAL LAB</button>
+      <button class="tab" type="button" role="tab" id="tab-cases" aria-controls="view-cases" aria-selected="false" data-tab="cases"><span>04</span> INCIDENT CASES</button>
+    </nav>
+
+    <section class="workview" id="view-map" role="tabpanel" aria-labelledby="tab-map">
+      <div class="section-heading"><div><div class="eyebrow">01 / ARCHITECTURE EXPLORER</div><h2>Follow the infrastructure, not the slides.</h2><p>Click any component to inspect what exists in Terraform, what it connects to, and which file defines it.</p></div><span class="side-stamp">DESIGN AS CODE / V1.0</span></div>
+      <div class="explorer-layout">
+        <div class="sheet"><div class="sheet-bar"><span><i class="sheet-indicator"></i> NETWORK TOPOLOGY</span><div class="sheet-legend"><span><i class="legend-public"></i> Public route</span><span><i class="legend-private"></i> Isolated</span><span><i class="legend-optional"></i> Optional</span></div></div>
+          <div class="blueprint" id="topology-surface"><svg id="topology" viewBox="0 0 870 510" role="img" aria-label="Clickable VPC architecture graph showing Internet Gateway, public and isolated private subnets in two availability zones, security group and optional compute"></svg></div>
+          <div class="blueprint-footer"><span>VPC 10.42.0.0/16 · us-east-1a / 1b in Floci</span><span>NOT LIVE TELEMETRY</span></div>
+        </div>
+        <aside class="inspector"><div class="inspector-top"><span class="micro-label">COMPONENT INSPECTOR</span><span class="inspector-icon">↗</span></div>
+          <div id="inspector-kind" class="inspector-kind"></div><h3 id="inspector-name"></h3><p id="inspector-desc"></p>
+          <div id="inspector-details" class="detail-rows"></div><div class="inspector-learning"><strong>WHY IT MATTERS</strong><p id="inspector-why"></p></div>
+          <a id="inspector-source" class="source-action" href="https://github.com/Mishkaaass/terraform-aws-lab" target="_blank" rel="noopener noreferrer">READ THE TERRAFORM SOURCE <span>↗</span></a>
+        </aside>
+      </div>
+      <div class="mini-cards"><article><span>01 / ISOLATION</span><strong>Private isn't just a name.</strong><p>No NAT, no private default route, and no inbound rules. Trace the packet path to understand why.</p></article><article><span>02 / IDENTITY</span><strong>IAM ≠ network access.</strong><p>The SSM role authorizes API calls but cannot create reachability to an SSM endpoint.</p></article><article><span>03 / TEST SCOPE</span><strong>Emulation isn't production AWS.</strong><p>Floci validates local API behavior. It does not enforce or prove AWS's actual network dataplane.</p></article></div>
+      <div class="next-cta"><div><small>YOUR TURN</small><strong>What happens if you add an EC2 instance without a management route?</strong></div><button type="button" class="solid-btn" data-go="design">TRY A DESIGN CHANGE →</button></div>
+    </section>
+
+    <section class="workview" id="view-design" role="tabpanel" aria-labelledby="tab-design" hidden>
+      <div class="section-heading"><div><div class="eyebrow">02 / INTERACTIVE DESIGN SANDBOX</div><h2>Try a decision. See why it matters.</h2><p>This is a safe <strong>what-if game</strong>: pick a scenario below, see the switches change, then read the diagnosis on the right. You are not editing Terraform.</p></div><span class="side-stamp">SIMULATION ONLY · ZERO MUTATIONS</span></div>
+      <section class="explainer-strip" aria-label="How to use the Design Sandbox">
+        <strong>HOW TO USE THIS PAGE</strong>
+        <div class="explainer-steps">
+          <span><b>1</b> Pick an example</span><span><b>2</b> Predict what will happen</span><span><b>3</b> Read the result on the right</span><span><b>4</b> Try your own switches</span>
+        </div>
+        <p><b>Example:</b> Does giving a server an IAM role mean it can reach AWS SSM? Try the first example to find out.</p>
+      </section>
+      <section class="practice-picker" aria-label="Start with a practical example">
+        <div><span class="eyebrow">START HERE · ONE CLICK</span><h3>Choose a real engineering problem</h3><p>You do not need to understand the switches yet. Pick one example and the page sets them for you. Your job is to explain the result.</p></div>
+        <div class="practice-presets">
+          <button type="button" class="practice-preset" data-preset="isolated" aria-pressed="false"><span>EXAMPLE 1 · START HERE</span><strong>Why can't my EC2 use SSM?</strong><small>Enable a private server without endpoints</small></button>
+          <button type="button" class="practice-preset" data-preset="endpoints" aria-pressed="false"><span>EXAMPLE 2 · IMPROVE IT</span><strong>Manage EC2 privately</strong><small>Propose private SSM network access</small></button>
+          <button type="button" class="practice-preset" data-preset="exposed" aria-pressed="false"><span>EXAMPLE 3 · SECURITY</span><strong>What if I open SSH?</strong><small>See why public access is risky</small></button>
+        </div>
+        <div id="design-lesson" class="practice-lesson" aria-live="polite">Select <strong>Example 1</strong> to begin. We'll explain what each switch means.</div>
+      </section>
+      <div class="design-layout">
+        <div class="control-panel"><div class="control-header"><span>YOUR DESIGN OPTIONS · BROWSER ONLY</span><button class="reset-link" id="design-reset" type="button">RESET TO REPO ↺</button></div>
+          <div class="control-intro"><strong>These switches are architectural choices</strong><p>EC2 = virtual server · SSM = remote administration without SSH · NAT = outbound internet route · SG = traffic firewall.</p><p>Start with an example above. Later, experiment here.</p></div>
+          <div class="switch-list">
+            <label class="switch-row"><span><strong>Enable private EC2</strong><small>Existing optional Terraform variable · preview only</small></span><input type="checkbox" id="cfg-compute"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Add private SSM endpoints</strong><small>Proposed architecture — not in repository yet</small></span><input type="checkbox" id="cfg-ssm"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Provide NAT egress</strong><small>Hypothetical; existing SG still blocks public HTTPS</small></span><input type="checkbox" id="cfg-nat"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Give EC2 a public IP</strong><small>Hypothetical — violates private-only design</small></span><input type="checkbox" id="cfg-public"><span class="switch-ui"></span></label>
+            <label class="switch-row"><span><strong>Allow inbound SSH from anywhere</strong><small>Hypothetical — high-risk security change</small></span><input type="checkbox" id="cfg-ssh"><span class="switch-ui"></span></label>
+          </div>
+          <div class="safety-inline">All switches change this browser's model only. The real Terraform configuration, Docker, VM and AWS remain untouched.</div>
+        </div>
+        <div class="result-panel"><div class="result-header"><span>WHAT-IF RESULTS · SIMULATION, NOT TERRAFORM PLAN</span><span id="plan-count" class="count-chip">NO PROPOSED CHANGES</span></div>
+          <div class="result-body"><div class="result-guide"><strong>READ THIS SIDE AFTER CHOOSING</strong><p>Does the design work? What is missing? Would you approve the change? None of this is deployed.</p></div><div id="plan-verdict" class="verdict" aria-live="polite"></div><h3>What did your choices propose?</h3><div id="plan-changes" class="plan-list"></div><h3>What should you learn from this?</h3><div id="plan-analysis" class="analysis-list"></div>
+            <details class="advanced-code"><summary>Curious? Read the scenario settings (advanced)</summary><p>These are labels for this simulation, NOT commands or Terraform files. Never paste them into a shell.</p><div id="plan-code" class="settings-preview"></div></details>
+            <div class="review-prompt"><label for="decision-note">Can you explain the result in one sentence? What would you check before approving the design?</label><textarea id="decision-note" rows="3" placeholder="The route is missing because... The security boundary... My proof would be..."></textarea><button type="button" class="outline-btn" id="copy-decision">COPY MY REVIEW NOTES</button><span id="decision-copy-status" role="status" class="micro-message"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="next-cta"><div><small>FROM IDEA TO EVIDENCE</small><strong>A simulation suggests outcomes. The actual emulator proves what the code does.</strong></div><button type="button" class="solid-btn" data-go="real">RUN A LOCAL LAB →</button></div>
+    </section>
+
+    <section class="workview" id="view-real" role="tabpanel" aria-labelledby="tab-real" hidden>
+      <div class="section-heading"><div><div class="eyebrow">03 / ACTUAL LOCAL INFRASTRUCTURE</div><h2>Build it yourself, one small step at a time.</h2><p>This is your <strong>terminal guide</strong> for a real local AWS emulator. It does <strong>not</strong> run commands for you. Copy a command, run it in your own terminal, and inspect what happened.</p></div><span class="side-stamp">LOCAL FLOCI / OPTIONAL KVM</span></div>
+      <section class="explainer-strip" aria-label="How the real lab works">
+        <strong>YOUR 4-STEP WORKFLOW</strong>
+        <div class="explainer-steps">
+          <span><b>1</b> Open a second terminal</span><span><b>2</b> Copy one command below</span><span><b>3</b> Run it and read the output</span><span><b>4</b> Paste the output and check</span>
+        </div>
+        <p>Open the terminal in <code>~/projects/terraform-aws-lab</code> or in the folder where you cloned this repository. Keep this browser page open beside it.</p>
+      </section>
+      <div class="real-intro-cards">
+        <article><span>NEW TO THESE TOOLS?</span><strong>Start with checkpoint 1</strong><p>Terraform tests the intended design. No Docker or AWS account required.</p></article>
+        <article><span>WANT TO SEE RESOURCES?</span><strong>Try checkpoints 2–5</strong><p>Floci pretends to be AWS locally. You can inspect real emulated VPC and subnet resources.</p></article>
+        <article><span>READY FOR A CHALLENGE?</span><strong>Try checkpoint 6</strong><p>Deliberately change a local VPC tag, detect the drift, then approve a guarded repair.</p></article>
+      </div>
+      <div class="live-layout"><div>
+        <div class="doctor-box"><div><strong>STEP ZERO · CHECK YOUR MACHINE FIRST</strong><p>Before copying any checkpoint, run this read-only diagnostic. It checks your Terraform version, Docker permissions, whether Floci still contains the VPC recorded in Terraform state, and optional VM status. Any <b>[BLOCK]</b> means stop and review the setup first.</p></div><div class="doctor-command"><code>bash engineering-lab/doctor.sh</code><button id="copy-doctor" type="button" class="outline-btn">COPY CHECK</button></div><p>Do not paste Design Sandbox settings into a terminal; they are simulation labels, not Linux commands. If the diagnostic says BLOCK, stop and inspect before any apply.</p></div>
+        <div class="safety-banner"><strong>BEFORE YOU START</strong><p>Checkpoint 1 needs Terraform 1.17.x; project commands select a compatible installed version automatically. Steps 2–6 use local Floci: Docker access is needed only to START it, not to reuse a healthy running emulator. Steps 5–6 also need AWS CLI. Checkpoint 7 is optional; a stopped KVM guest is normal. <strong>Apply and drift change the local emulator and Terraform state.</strong> Use a personal test environment, read the plan and never paste passwords, tokens or private keys. <strong>Already deployed? “No changes” is success — do not reapply just to tick a box.</strong></p></div>
+        <div class="checkpoint-grid"><div class="checkpoint-header"><span>HANDS-ON CHECKPOINTS</span><strong id="checkpoint-progress">0 / 7 OUTPUT MARKERS MATCHED</strong></div><div id="checkpoint-nav" class="checkpoint-nav"></div></div>
+        <article class="step-card"><div class="step-meta"><span id="step-number"></span><span id="step-risk"></span></div><h3 id="step-title"></h3><p id="step-explain"></p>
+          <div class="step-explained">
+            <div><span>WHY AM I DOING THIS?</span><p id="step-purpose"></p></div>
+            <div><span>WHAT WILL THIS COMMAND CHANGE?</span><p id="step-impact"></p></div>
+            <div><span>WHAT SUCCESS SHOULD LOOK LIKE</span><p id="step-expected"></p></div>
+          </div>
+          <div class="command-box"><div class="command-top"><span>RUN MANUALLY · REPOSITORY ROOT</span><button id="copy-command" type="button">COPY COMMAND</button></div><pre id="step-command"></pre></div><label class="field-label" for="step-output">Paste the actual terminal output below to check it:</label><textarea id="step-output" rows="6" placeholder="Paste the result here. This stays in your browser; it is not uploaded."></textarea><div class="step-actions"><button class="solid-btn" id="verify-step" type="button">CHECK OUTPUT TEXT →</button><button class="outline-btn" id="next-checkpoint" type="button">NEXT CHECKPOINT →</button></div><div id="step-result" role="status" class="step-feedback"></div><p class="micro-note">This only looks for expected text in what you pasted. It cannot verify who ran a command or guarantee a secure result. Review the actual output yourself.</p><p id="step-proof" class="micro-note"></p></article>
+      </div>
+      <aside class="evidence-board"><div class="board-head"><span>OPTIONAL · READ-ONLY MACHINE SNAPSHOT</span><span class="board-dot"></span></div><h3>See what is actually running locally</h3><p>This is separate from the seven checkpoints. In your second terminal, run the probe below. Copy only its small JSON result into the box and click <strong>Inspect evidence</strong>. You will see whether Floci responds and, if installed, whether the Ubuntu VM and its health endpoint respond.</p><div class="command-box compact"><div class="command-top"><span>READ-ONLY PROBE</span><button id="copy-probe" type="button">COPY</button></div><pre id="probe-command">python3 engineering-lab/probe.py</pre></div><label for="probe-input" class="field-label">Step 2: Paste the JSON that starts with <code>{"schema":1,...}</code> (never secrets):</label><textarea id="probe-input" rows="7" placeholder='{"schema":1,"source":"local-readonly-probe",...}'></textarea><button class="outline-btn full" type="button" id="inspect-probe">STEP 3 · SHOW LOCAL STATUS →</button><div id="probe-message" class="micro-message" role="status"></div><div class="signal-rows"><div><span>FLOCI API</span><strong id="signal-floci">NOT INSPECTED</strong></div><div><span>KVM GUEST</span><strong id="signal-kvm">NOT INSPECTED</strong></div><div><span>GUEST HTTP /health</span><strong id="signal-health">NOT INSPECTED</strong></div><div><span>OBSERVED AT</span><strong id="signal-at">—</strong></div></div><p class="probe-limits">No automatic connection or data upload. If you have no KVM VM, an UNKNOWN status is normal. Pasted JSON is not independently authenticated and never proves real AWS behavior.</p></aside></div>
+      <div class="next-cta"><div><small>GO DEEPER</small><strong>Once a system works, can you diagnose why it stops working?</strong></div><button type="button" class="solid-btn" data-go="cases">OPEN INCIDENT DRILLS →</button></div>
+    </section>
+
+    <section class="workview" id="view-cases" role="tabpanel" aria-labelledby="tab-cases" hidden>
+      <div class="section-heading"><div><div class="eyebrow">04 / REAL POSTMORTEMS & ENGINEERING JUDGMENT</div><h2>The evidence doesn't give you the answer.</h2><p>Seven cases drawn from real KVM/CI incidents and Terraform design reviews. Choose a diagnosis, inspect the evidence, then defend the decision.</p></div><div class="case-score"><span>DECISION SCORE</span><strong id="score">00<span class="score-denom">/21</span></strong><small id="progress-text">0 attempted</small></div></div>
+      <nav id="mission-nav" class="case-nav" aria-label="Incident cases"></nav>
+      <div class="cases-layout">
+        <article class="case-paper"><div class="case-topline"><span id="scenario-index">INCIDENT 01 / 07</span><span id="scenario-type"></span><span id="impact"></span></div><div class="case-inner"><div id="track" class="eyebrow"></div><h3 id="scenario-title"></h3><p id="scenario-story"></p><div class="phase-heading"><span id="phase-number">01 / 03</span><div id="phase-steps" class="phase-steps"></div></div>
+          <div id="challenge"><div id="challenge-stage" class="eyebrow"></div><h4 id="question"></h4><div id="options" class="answer-list"></div><div id="feedback" class="answer-feedback" hidden></div><div class="case-actions"><button id="hint-btn" class="outline-btn" type="button">SHOW HINT</button><button id="next-btn" class="solid-btn" type="button" disabled>NEXT DECISION →</button></div><div id="hint" class="hint" hidden></div></div>
+          <section id="debrief" class="debrief" hidden><div class="eyebrow">POSTMORTEM</div><h4>Explain this incident as the engineer.</h4><p id="debrief-text"></p><label class="field-label" for="reflection">What did you observe, decide and verify?</label><textarea id="reflection" rows="5" placeholder="My hypothesis... I ruled out... The proof I would collect..."></textarea><div class="case-actions"><button id="copy-notes" type="button" class="outline-btn">COPY MY NOTES</button><button id="next-mission" type="button" class="solid-btn">NEXT CASE →</button></div><span id="copied" class="micro-message" role="status"></span></section>
+        </div></article>
+        <aside class="case-evidence"><div class="small-cap">FIELD EVIDENCE · RECORDED, NOT LIVE</div><h3>Evidence locker</h3><div id="evidence"></div><div class="small-cap source-heading">PRIMARY SOURCE FILES</div><div id="source-list"></div></aside>
+      </div>
+    </section>
+    <footer class="footer"><strong>TERRAFORM STUDIO</strong><span>Browser simulation ≠ Terraform plan ≠ real AWS. Only terminal commands you explicitly run can alter your own local lab.</span><a href="https://github.com/Mishkaaass/terraform-aws-lab" rel="noopener noreferrer" target="_blank">SOURCE REPOSITORY ↗</a></footer>
+  </main>
+</div>
+<div id="fatal" class="fatal" role="alert" hidden></div>
+</body>
+</html>

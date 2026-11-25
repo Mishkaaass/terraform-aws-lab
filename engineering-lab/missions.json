@@ -1,0 +1,539 @@
+{
+  "schema": 1,
+  "title": "Infrastructure Failure Lab",
+  "subtitle": "Think like the engineer on call. Predict, inspect evidence, decide, and defend your proof.",
+  "disclosure": "Recorded incident snapshots and design exercises only. This browser is an offline training simulator; it does not execute commands, reach AWS, inspect your laptop, or persist your answers.",
+  "missions": [
+    {
+      "id": "boot",
+      "index": "01",
+      "title": "Running VM. No disk. No IP.",
+      "track": "KVM · Linux",
+      "zone": "kvm",
+      "level": "Real incident replay",
+      "impact": "Provisioning blocked",
+      "story": "Terraform reports a running domain. There is no DHCP lease, SSH cannot connect, and the guest drops to initramfs. Take the role of the on-call engineer before touching the network.",
+      "evidence": [
+        {
+          "label": "Host signals · recorded",
+          "body": "libvirt domain: running\nDHCP leases on default network: none\nHost disk mapping: vda -> tfaws-lab01-root.qcow2\nGuest console: initramfs rescue shell"
+        },
+        {
+          "label": "Guest boot · recorded",
+          "body": "ALERT! LABEL=cloudimg-rootfs does not exist\n/proc/partitions: only sr0 (cloud-init ISO)\n/sys/block: sr0 and loop devices; no vda\nVirtIO PCI 0000:03:00.0 (0x1042): NO DRIVER\nvirtio-pci: Unable to change power state from D3cold to D0"
+        }
+      ],
+      "paths": [
+        "environments/libvirt/main.tf",
+        "docs/LOCAL_VM.md"
+      ],
+      "phases": [
+        {
+          "stage": "OBSERVE",
+          "question": "The domain is 'running', but it has no lease. What is the best next observation?",
+          "choices": [
+            "Restart dnsmasq and reconfigure the host bridge",
+            "Open the guest serial console and check its boot state",
+            "Replace the Ubuntu qcow2 image"
+          ],
+          "answer": 1,
+          "why": "A running QEMU process only proves the virtual machine process is alive. It does not prove the guest kernel booted or reached DHCP. The serial console reveals the earlier failure without altering host networking.",
+          "hint": "Which observation lets you distinguish a boot failure from a networking failure?",
+          "proof": "The actual guest console revealed the initramfs error before any DHCP request.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "virsh -c qemu:///system console tfaws-lab01",
+          "safety": "interactive"
+        },
+        {
+          "stage": "DIAGNOSE",
+          "question": "Why is changing root=LABEL=cloudimg-rootfs the wrong first fix?",
+          "choices": [
+            "The kernel sees no virtio root block device at all; investigate PCI/device binding first",
+            "cloud-init always rewrites disk labels on first boot",
+            "dnsmasq must assign an IP before Linux can mount its root disk"
+          ],
+          "answer": 0,
+          "why": "The guest can see sr0 but not vda. A wrong filesystem label would still leave a visible block device. The missing device, PCI VirtIO IDs and D3cold errors point to virtual PCI device accessibility/binding.",
+          "hint": "Can a filesystem label be queried on a disk the kernel cannot see?",
+          "proof": "Only sr0 appeared in /proc/partitions even after modprobe; VirtIO devices were present in PCI without drivers.",
+          "source": "environments/libvirt/main.tf",
+          "command": "cat /proc/partitions; ls /sys/block",
+          "safety": "readonly"
+        },
+        {
+          "stage": "MITIGATE",
+          "question": "Which proposed remediation preserves data and matches the observed outcome on this host?",
+          "choices": [
+            "Disable AppArmor and recreate the entire storage pool",
+            "Change machine type q35 to pc, review a VM-only plan, then verify guest boot",
+            "Conclude that q35 never supports Ubuntu or VirtIO"
+          ],
+          "answer": 1,
+          "why": "On this particular host, switching q35 PCIe topology to the pc/i440fx machine yielded working VirtIO disks and networking. Terraform planned 0 adds, 1 in-place VM change, 0 destroys. This is not a universal q35 rule.",
+          "hint": "Look for the smallest change supported by the evidence and check the Terraform plan.",
+          "proof": "Post-change guest obtained 192.168.122.230, completed cloud-init, and the final Terraform plan showed No changes.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "terraform -chdir=environments/libvirt plan -input=false",
+          "safety": "readonly"
+        }
+      ],
+      "debrief": "Reliability is layered: a running hypervisor process is not OS readiness. Diagnose from the guest console, then require a narrow plan and independent post-change evidence."
+    },
+    {
+      "id": "apparmor",
+      "index": "02",
+      "title": "QEMU fails before boot",
+      "track": "AppArmor · storage",
+      "zone": "kvm",
+      "level": "Real incident replay",
+      "impact": "Guest cannot start",
+      "story": "QEMU refuses to start because its confinement policy does not permit opening files in the qcow2 backing chain, then the cloud-init ISO. The easiest workaround would also weaken host security.",
+      "evidence": [
+        {
+          "label": "QEMU / host · incident summary",
+          "body": "Root disk: sparse qcow2 overlay\nBacking image: Ubuntu cloud-image qcow2\nAppArmor: file access denied on backing image\nAfter root fix: access denied on cloud-init ISO\nBoth originally referenced through source.volume"
+        },
+        {
+          "label": "Repository mitigation · source-derived",
+          "body": "domain.devices.disks[0].source.file = libvirt_volume.root.path\ndomain.devices.disks[1].source.file = libvirt_volume.seed.path\nExisting libvirt storage pool and AppArmor remain enabled"
+        }
+      ],
+      "paths": [
+        "environments/libvirt/main.tf",
+        "docs/LOCAL_VM.md"
+      ],
+      "phases": [
+        {
+          "stage": "OBSERVE",
+          "question": "The VM cannot start even though both volumes exist. What evidence best narrows the failure?",
+          "choices": [
+            "Inspect QEMU/libvirt startup logs and AppArmor denials",
+            "Change DHCP range until a lease appears",
+            "SSH to devops inside the unbooted VM"
+          ],
+          "answer": 0,
+          "why": "A startup denial precedes guest execution. Host QEMU/libvirt/AppArmor evidence is the right layer. DHCP and SSH cannot be the root cause of a guest that never started.",
+          "hint": "Where can a process-start failure be observed before the guest OS runs?",
+          "proof": "The incident revealed denial to a qcow2 backing file and later to the seed ISO.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "journalctl -k --no-pager | grep -i apparmor | tail -n 30",
+          "safety": "readonly"
+        },
+        {
+          "stage": "DECIDE",
+          "question": "How do you restore access without removing the security boundary?",
+          "choices": [
+            "Disable AppArmor globally",
+            "Chmod 777 every image and switch the disk to raw",
+            "Use supported direct source.file references for both disk and ISO, then review the plan"
+          ],
+          "answer": 2,
+          "why": "Referencing the file paths lets libvirt's AppArmor helper discover the image chain on this host; it avoids a global security downgrade. Filesystem permissions alone do not override MAC policy.",
+          "hint": "Can we change how the hypervisor declares files rather than turn off confinement?",
+          "proof": "Both disk declarations now use source.file and the guest subsequently booted with AppArmor still active.",
+          "source": "environments/libvirt/main.tf",
+          "command": "virsh -c qemu:///system domblklist tfaws-lab01 --details",
+          "safety": "readonly"
+        },
+        {
+          "stage": "VERIFY",
+          "question": "Which evidence is required before saying the mitigation is complete?",
+          "choices": [
+            "Only that 'terraform validate' passes",
+            "Only that the qcow2 file exists",
+            "QEMU starts, guest sees the disk, cloud-init completes, and host health request succeeds"
+          ],
+          "answer": 2,
+          "why": "Static configuration and file existence are necessary but insufficient. Verify across the host, guest, bootstrap and application layers.",
+          "hint": "A file-access fix is useful only if the guest can now boot and serve traffic.",
+          "proof": "Real guest: cloud-init done, systemd service active, /health returned JSON status ok, then Terraform showed no drift.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "terraform -chdir=environments/libvirt plan -input=false",
+          "safety": "readonly"
+        }
+      ],
+      "debrief": "Prefer narrow policy-compatible fixes over disabling host security. Distinguish hypervisor startup, kernel boot, provisioning and application availability."
+    },
+    {
+      "id": "drift",
+      "index": "03",
+      "title": "Someone changed infrastructure manually",
+      "track": "Terraform · state",
+      "zone": "emulator",
+      "level": "Script-backed drill",
+      "impact": "Desired / actual mismatch",
+      "story": "Someone modifies only the Name tag of the managed VPC outside Terraform using the local Floci API. Terraform is expected to detect drift and restore the intended value — but only after the planned changes are inspected.",
+      "evidence": [
+        {
+          "label": "Drill contract · source-derived",
+          "body": "Terraform expected Name: terraform-aws-lab-vpc\nOut-of-band Name: terraform-aws-lab-out-of-band\nPlan -detailed-exitcode: 2 means changes\nGuard: exactly one update, only the VPC Name tag\nAfter approved repair: plan exit 0"
+        },
+        {
+          "label": "Safety boundaries",
+          "body": "AWS CLI endpoint is http://127.0.0.1:4566\nDisposable test credentials are injected in a child process\nRepair requires typing yes\nDrill does not touch a real AWS account"
+        }
+      ],
+      "paths": [
+        "scripts/drift-lab.sh",
+        "docs/LEARNING_PATH.md"
+      ],
+      "phases": [
+        {
+          "stage": "PREDICT",
+          "question": "What does Terraform exit code 2 mean with -detailed-exitcode?",
+          "choices": [
+            "The plan found changes between desired and actual state",
+            "The provider credentials are incorrect",
+            "Everything is already identical"
+          ],
+          "answer": 0,
+          "why": "With -detailed-exitcode, exit 0 means no diff, 1 means error, and 2 means a non-empty plan. You still need to inspect WHAT would change.",
+          "hint": "Compare it with exit 0 after a successful repair.",
+          "proof": "scripts/drift-lab.sh explicitly requires 2 before it proceeds with its safety gate.",
+          "source": "scripts/drift-lab.sh",
+          "command": "terraform -chdir=environments/floci plan -input=false -detailed-exitcode",
+          "safety": "readonly"
+        },
+        {
+          "stage": "GUARD",
+          "question": "The planned repair unexpectedly replaces an EC2 instance too. What should happen?",
+          "choices": [
+            "Apply immediately because Terraform is declarative",
+            "Block repair and investigate the unexpected resource changes",
+            "Edit the tfstate file by hand to suppress the diff"
+          ],
+          "answer": 1,
+          "why": "A plan with additional or destructive changes is outside the approved scope. The drill asserts one VPC Name update and compares all other attributes before allowing a repair.",
+          "hint": "What would an engineer check before making changes to resources outside the ticket?",
+          "proof": "The script compares the complete before/after object after removing only the permitted Name fields.",
+          "source": "scripts/drift-lab.sh",
+          "command": "terraform -chdir=environments/floci plan -input=false",
+          "safety": "readonly"
+        },
+        {
+          "stage": "RECOVER",
+          "question": "Which sequence demonstrates idempotent, controlled recovery?",
+          "choices": [
+            "Change tag via AWS CLI, run auto-approve destroy, declare success",
+            "Require exact plan scope, ask approval, apply saved plan, verify tag and zero-change plan",
+            "Delete local Terraform state and initialize again"
+          ],
+          "answer": 1,
+          "why": "Reviewing and applying a saved plan with approval prevents an unreviewed replacement. The final plan must show no changes, and the external API must show the restored tag.",
+          "hint": "The best proof is both Terraform output and an independent API observation.",
+          "proof": "make local-drift implements the guard, prompts for explicit consent, verifies actual tag and final plan exit 0.",
+          "source": "scripts/drift-lab.sh",
+          "command": "make local-drift",
+          "safety": "changes-emulator"
+        }
+      ],
+      "debrief": "Terraform is not magic: plan exit codes, state, external API evidence, scope-of-change checks and deliberate approval are separate controls."
+    },
+    {
+      "id": "emulation",
+      "index": "04",
+      "title": "Green CI — but not real AWS",
+      "track": "Floci · trust boundary",
+      "zone": "emulator",
+      "level": "Architecture review",
+      "impact": "Misleading evidence",
+      "story": "Your tests pass against a local AWS API emulator. A reviewer asks whether that proves the security groups, IAM and routing will behave correctly in real AWS.",
+      "evidence": [
+        {
+          "label": "Local provider configuration",
+          "body": "access_key = test\nsecret_key = test\nendpoints.ec2/iam/sts = http://127.0.0.1:4566\nskip_credentials_validation = true\nFloci default: EC2 disabled; no Docker socket mount"
+        },
+        {
+          "label": "Three verification layers",
+          "body": "1. terraform test + mock provider: configuration assertions\n2. Floci integration: local emulated API behavior\n3. Real AWS sandbox: actual cloud behavior (not exercised by default)"
+        }
+      ],
+      "paths": [
+        "environments/floci/provider.tf",
+        "docs/SECURITY.md",
+        "compose.yaml",
+        "environments/aws/provider.tf"
+      ],
+      "phases": [
+        {
+          "stage": "CLASSIFY",
+          "question": "Which statement about passing mock tests and Floci integration is defensible?",
+          "choices": [
+            "This proves every real AWS IAM/network behavior",
+            "These prove configuration intent and certain local API flows, not production AWS behavior",
+            "Green CI guarantees the public cloud has been provisioned"
+          ],
+          "answer": 1,
+          "why": "Mocked providers are plan-time assertions. Emulated API responses can verify workflows locally but cannot establish real AWS network isolation, IAM enforcement, cost or resiliency.",
+          "hint": "What actually executed: a real AWS service or a local implementation of selected APIs?",
+          "proof": "The repository explicitly distinguishes mock tests, Floci emulator integration, and guarded real AWS.",
+          "source": "docs/SECURITY.md",
+          "command": "make test",
+          "safety": "readonly"
+        },
+        {
+          "stage": "THREAT MODEL",
+          "question": "Why is Floci EC2 execution intentionally off by default?",
+          "choices": [
+            "Docker's host socket would grant powerful host control to the emulator",
+            "EC2 is impossible to model in Terraform",
+            "It is safe to expose the Docker socket from any container"
+          ],
+          "answer": 0,
+          "why": "A mounted /var/run/docker.sock is a privileged host-control boundary. The project avoids that shortcut by default and still exercises network/IAM Terraform code.",
+          "hint": "What could an untrusted process do with the host Docker daemon?",
+          "proof": "The README and Compose configuration do not mount the Docker socket and compute is disabled.",
+          "source": "compose.yaml",
+          "command": "docker compose config --quiet",
+          "safety": "readonly"
+        },
+        {
+          "stage": "BOUNDARY",
+          "question": "If you later want to test real AWS, which separation is essential?",
+          "choices": [
+            "Change localhost endpoints to cloud endpoints in the same state root",
+            "Reuse emulator test credentials for production",
+            "Use the isolated AWS root, expected-account guard, scoped credentials, cost approval and explicit plan"
+          ],
+          "answer": 2,
+          "why": "The separate roots stop accidental endpoint or state sharing. The AWS wrapper verifies account identity and requires deliberate confirmation. These guards reduce risk but are not a cost guarantee.",
+          "hint": "Where do state, credentials and provider endpoints need hard boundaries?",
+          "proof": "environments/aws/provider.tf restricts allowed_account_ids; the guarded wrapper is scripts/aws-command.sh.",
+          "source": "environments/aws/provider.tf",
+          "command": "bash scripts/aws-command.sh plan",
+          "safety": "guarded-cloud"
+        }
+      ],
+      "debrief": "Evidence has a scope. Name the exact system actually exercised. Security includes the privilege you refuse to grant just to make a demo easier."
+    },
+    {
+      "id": "network",
+      "index": "05",
+      "title": "Private EC2 can't reach SSM",
+      "track": "AWS · network design",
+      "zone": "aws",
+      "level": "Design exercise · not deployed",
+      "impact": "Management unavailable",
+      "story": "The Terraform design attaches an SSM IAM instance profile to a private-only EC2 instance. There is no NAT and no SSM VPC endpoints. An engineer assumes Session Manager access will work merely because the role is attached.",
+      "evidence": [
+        {
+          "label": "Network design · repo source",
+          "body": "VPC CIDR 10.42.0.0/16\nPrivate subnets: 10.42.10.0/24 and 10.42.11.0/24\nPrivate route table: implicit local route ONLY\nNo NAT gateway, no interface VPC endpoints"
+        },
+        {
+          "label": "Compute / identity defaults",
+          "body": "enable_compute = false (default)\nassociate_public_ip_address = false\nsecurity group: zero inbound; HTTPS egress to VPC CIDR only\nIAM role: AmazonSSMManagedInstanceCore\nIMDSv2 required; encrypted root volume"
+        }
+      ],
+      "paths": [
+        "modules/network/main.tf",
+        "modules/identity/main.tf",
+        "modules/compute/main.tf",
+        "docs/ARCHITECTURE.md",
+        "docs/AWS_RUNBOOK.md"
+      ],
+      "phases": [
+        {
+          "stage": "ISOLATE",
+          "question": "Why is SSM access NOT yet proven for this instance?",
+          "choices": [
+            "The role alone is sufficient, even without any network path",
+            "The agent needs reachability to SSM service endpoints; the private subnet has no such path",
+            "The security group must expose inbound TCP 22"
+          ],
+          "answer": 1,
+          "why": "IAM authorizes API actions but does not create routes or private service endpoints. The network is isolated, and a management path to AWS SSM services is absent.",
+          "hint": "Separate identity authorization from network reachability.",
+          "proof": "Network module omits NAT/endpoints, while the identity module only supplies the SSM policy.",
+          "source": "modules/network/main.tf",
+          "command": "terraform -chdir=environments/aws validate",
+          "safety": "readonly"
+        },
+        {
+          "stage": "DESIGN",
+          "question": "What is a secure design direction for private SSM management?",
+          "choices": [
+            "Assign a public IP, allow SSH from 0.0.0.0/0, and hardcode keys",
+            "Add required private SSM interface endpoints and appropriate endpoint SG/DNS policies, then test",
+            "Remove the instance profile because it is unused"
+          ],
+          "answer": 1,
+          "why": "Interface endpoints can supply private connectivity for SSM services without an internet path. Exact endpoints and security-group rules depend on the supported region, agent version and design; they are not present in this repository.",
+          "hint": "Can the service be reached privately without public ingress?",
+          "proof": "docs/ARCHITECTURE.md intentionally lists endpoints as a future extension, not an implemented feature.",
+          "source": "docs/ARCHITECTURE.md",
+          "command": "make local-ec2-plan",
+          "safety": "readonly"
+        },
+        {
+          "stage": "PROVE",
+          "question": "How should an interview demo state the SSM outcome today?",
+          "choices": [
+            "SSM is production-ready because terraform test is green",
+            "The private instance and SSM connectivity are not deployed/proven; explain missing endpoints and a real verification plan",
+            "The Floci emulator proves public AWS SSM sessions"
+          ],
+          "answer": 1,
+          "why": "The compute resource is disabled by default, and Floci does not verify real AWS networking. A credible engineer explicitly names untested claims and designs a constrained verification procedure.",
+          "hint": "Has a real AWS managed instance registered and accepted a test session?",
+          "proof": "The optional AWS runbook requires a separate sandbox, account controls and deliberate opt-in.",
+          "source": "docs/AWS_RUNBOOK.md",
+          "command": "make local-ec2-plan",
+          "safety": "readonly"
+        }
+      ],
+      "debrief": "Identity, routing, DNS, security groups and endpoints are independent dependencies. A secure design also states what was intentionally left unimplemented."
+    },
+    {
+      "id": "bootstrap",
+      "index": "06",
+      "title": "Boot completed. Is the service ready?",
+      "track": "Cloud-init · systemd",
+      "zone": "kvm",
+      "level": "Real runtime verification",
+      "impact": "False healthy signal",
+      "story": "The guest now boots. Cloud-init provisions a locked-password devops user, installs a Python HTTP service and starts it via systemd. You need to prove the delivered function works from both guest and host.",
+      "evidence": [
+        {
+          "label": "Real guest verification · recorded",
+          "body": "Ubuntu 24.04.5 LTS on tfaws-lab01\ncloud-init status → done\nsystemctl is-active lab-health → active\ncurl http://localhost:8080/health → {\"status\":\"ok\",\"service\":\"terraform-libvirt-lab\"}"
+        },
+        {
+          "label": "Real host verification · recorded",
+          "body": "devops SSH using dedicated ed25519 key succeeded\nIP assigned by libvirt DHCP: 192.168.122.230\ncurl from host to guest:8080/health → status ok\nTerraform plan → No changes"
+        }
+      ],
+      "paths": [
+        "environments/libvirt/cloud-init.yaml.tftpl",
+        "docs/LOCAL_VM.md"
+      ],
+      "phases": [
+        {
+          "stage": "AUTH",
+          "question": "The serial console asks for a login/password. How was this lab designed to authenticate?",
+          "choices": [
+            "Root password is stored in terraform.tfstate for console login",
+            "The devops account uses a dedicated SSH public key; password login is disabled",
+            "Any guest can log in without credentials because this is local KVM"
+          ],
+          "answer": 1,
+          "why": "cloud-init config disables root login/password SSH and locks the devops password; it injects only the public half of a dedicated key. The private half stays on the reviewer host.",
+          "hint": "Read ssh_pwauth, lock_passwd and ssh_authorized_keys in the template.",
+          "proof": "The guest's authorized_keys contained the dedicated lab key; SSH login as devops succeeded.",
+          "source": "environments/libvirt/cloud-init.yaml.tftpl",
+          "command": "ssh -i \"$HOME/.ssh/terraform-lab\" devops@GUEST_IP",
+          "safety": "interactive"
+        },
+        {
+          "stage": "VERIFY",
+          "question": "What is stronger proof than just 'the VM is running'?",
+          "choices": [
+            "Only checking that /dev/vda is present",
+            "Cloud-init done, systemd active, and HTTP /health returns expected JSON from the host",
+            "Terraform fmt succeeds without booting a VM"
+          ],
+          "answer": 1,
+          "why": "The end-to-end request validates the provisioning pipeline and network path to the application, while cloud-init and systemd expose independent boot/setup and process signals.",
+          "hint": "Can a running hypervisor tell you whether your actual API is serving?",
+          "proof": "Both guest and host returned {\"status\":\"ok\",\"service\":\"terraform-libvirt-lab\"}.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "curl -fsS --max-time 5 http://GUEST_IP:8080/health",
+          "safety": "readonly"
+        },
+        {
+          "stage": "REVIEW",
+          "question": "Does this /health success prove the whole design is production hardened?",
+          "choices": [
+            "Yes, HTTP 200 proves durability, authentication and recovery",
+            "No, it proves this small API and path; security, persistence, fault-tolerance and load testing are separate",
+            "Yes, systemd automatically encrypts every network request"
+          ],
+          "answer": 1,
+          "why": "This endpoint is intentionally minimal, unauthenticated and binds to 0.0.0.0 inside the NAT guest. It is an educational reachability check, not a protected production API or availability SLO.",
+          "hint": "What does the handler actually test beyond returning a fixed JSON body?",
+          "proof": "The Python HTTP handler only responds to GET /health with a constant JSON response.",
+          "source": "environments/libvirt/cloud-init.yaml.tftpl",
+          "command": "ssh -i \"$HOME/.ssh/terraform-lab\" devops@GUEST_IP 'systemctl status lab-health --no-pager'",
+          "safety": "readonly"
+        }
+      ],
+      "debrief": "A successful deployment needs evidence across identity, boot, service manager, application and network. A health endpoint proves exactly what it checks — no more."
+    },
+    {
+      "id": "delivery",
+      "index": "07",
+      "title": "Which green badge can you trust?",
+      "track": "CI · verification",
+      "zone": "emulator",
+      "level": "Recorded CI incident + review",
+      "impact": "Overclaiming completeness",
+      "story": "Two GitHub Actions jobs fail while KVM is already functional locally. After a formatting-only commit, all five project CI jobs pass. A reviewer asks what this does and does not establish.",
+      "evidence": [
+        {
+          "label": "Initial failed CI · recorded",
+          "body": "Terraform format / validation / mock tests: failure\nLocal Linux VM / Terraform validation: failure\nLog: terraform fmt -check -recursive\nFound: environments/libvirt/main.tf\nCause: indentation/alignment; exit 3"
+        },
+        {
+          "label": "After style-only commit · recorded",
+          "body": "Terraform format / validation / mock tests: success\nLocal Linux VM / Terraform validation: success\nFloci AWS API integration: success\nTrivy IaC security scan: success\nGitleaks secret scan: success\nKVM runtime verified independently on laptop"
+        }
+      ],
+      "paths": [
+        ".github/workflows/ci.yml",
+        "docs/LOCAL_VM.md",
+        "docs/SECURITY.md"
+      ],
+      "phases": [
+        {
+          "stage": "TRIAGE",
+          "question": "Both format-related jobs fail, but the VM runs locally. What is the accurate incident classification?",
+          "choices": [
+            "The VM runtime is definitely broken",
+            "CI formatting gate failed; inspect logs before claiming Terraform validation failed too",
+            "Trivy proves that formatting is optional"
+          ],
+          "answer": 1,
+          "why": "A job can fail at its first command and skip subsequent validation. A formatting failure does not imply a runtime fault. The exact failed step is the evidence.",
+          "hint": "A red job doesn't tell you which step failed; open its log.",
+          "proof": "Both jobs exited on terraform fmt -check before reaching their remaining steps.",
+          "source": ".github/workflows/ci.yml",
+          "command": "terraform fmt -check -recursive",
+          "safety": "readonly"
+        },
+        {
+          "stage": "BOUNDARY",
+          "question": "All five CI checks now pass. What still needs separate evidence?",
+          "choices": [
+            "Actual KVM guest boot, SSH, cloud-init and host-to-guest HTTP behavior",
+            "Whether the HCL parses",
+            "Whether secrets were committed to the repository"
+          ],
+          "answer": 0,
+          "why": "The GitHub runner doesn't create the actual laptop KVM guest. It verifies static Terraform, mocked/emulated interactions and scanners; physical runtime validation is independent.",
+          "hint": "Where did the VM with 192.168.122.230 actually run?",
+          "proof": "The laptop console, SSH session and curl demonstrated runtime, and a subsequent Terraform plan showed no drift.",
+          "source": "docs/LOCAL_VM.md",
+          "command": "terraform -chdir=environments/libvirt plan -input=false",
+          "safety": "readonly"
+        },
+        {
+          "stage": "HANDOFF",
+          "question": "What is the strongest honest portfolio claim?",
+          "choices": [
+            "One passing Actions page proves AWS production readiness",
+            "The repository contains tested HCL, emulated API checks and a real KVM runtime demo; AWS production behavior is explicitly untested",
+            "The VPC IAM policy means real EC2 was deployed automatically"
+          ],
+          "answer": 1,
+          "why": "Good engineering distinguishes configuration tests, emulator behavior and actual guest runtime, while listing unverified cloud behavior and future endpoints/cost constraints.",
+          "hint": "Name what was exercised, where it ran, and which guarantees remain out of scope.",
+          "proof": "Inspect five checks in CI, the local VM runbook, and the security model's 'does not prove' column.",
+          "source": "docs/SECURITY.md",
+          "command": "make test",
+          "safety": "readonly"
+        }
+      ],
+      "debrief": "A good engineering demo is falsifiable: show exact checks, distinguish CI evidence from runtime evidence, and explicitly state what is still unknown."
+    }
+  ]
+}

@@ -3,7 +3,7 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ACTION="${1:-}"
 case "$ACTION" in plan|apply|destroy) ;; *) echo 'Usage: scripts/aws-command.sh plan|apply|destroy' >&2; exit 2 ;; esac
-for cmd in aws terraform; do
+for cmd in aws bash; do
   command -v "$cmd" >/dev/null || { echo "$cmd required." >&2; exit 1; }
 done
 for forbidden in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE; do
@@ -29,6 +29,6 @@ if [[ "$ACTION" == destroy ]]; then
   [[ "${CONFIRM_AWS_DESTROY:-}" == YES ]] || { echo '[BLOCK] Set CONFIRM_AWS_DESTROY=YES to allow interactive destroy.' >&2; exit 1; }
 fi
 export TF_VAR_expected_account_id="$AWS_EXPECTED_ACCOUNT_ID"
-terraform -chdir="$ROOT/environments/aws" init -input=false
+bash "$ROOT/scripts/terraform.sh" -chdir="$ROOT/environments/aws" init -input=false
 # Do NOT use -auto-approve. Terraform will show the plan and ask for confirmation.
-terraform -chdir="$ROOT/environments/aws" "$ACTION"
+bash "$ROOT/scripts/terraform.sh" -chdir="$ROOT/environments/aws" "$ACTION"
