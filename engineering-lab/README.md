@@ -1,12 +1,10 @@
-# Engineering Dojo — reviewer guide
+# Infrastructure Studio — guided reviewer playground
 
-**A runnable learning experience, not a screenshot or a solved checklist.**
+This is a **working learning lab**, not a screenshot or just multiple-choice questions. The experience is deliberately different from the CI/CD OpsBoard UI: a light architectural drawing board, interactive component inspector, design what-if controls, seven genuine terminal checkpoints and separate real-incident review.
 
-Start a local browser-only training experience with **seven incident missions and 21 engineering decisions**. Every decision asks for the next safe observation, a hypothesis, an intervention boundary or independent verification. Explanations, evidence and code references become visible after each answer. End each mission with your own written incident review and copy your notes.
+## Start the safe browser mode
 
-## Launch in 20 seconds
-
-Requirements: Python 3, a browser and this repository. **No AWS account, Terraform, Docker, KVM or elevated privileges required for the simulator.**
+Requirements: Python 3 and a browser. **No AWS account, Docker, Terraform, sudo, libvirt or credentials needed.**
 
 From the repository root:
 
@@ -14,63 +12,100 @@ From the repository root:
 python3 engineering-lab/serve.py
 ```
 
-Open **http://127.0.0.1:8765/**. Stop the local server with Ctrl+C.
+Open http://127.0.0.1:8765/ (localhost only); stop with Ctrl+C.
 
-The simulator contains recorded evidence and design exercises. It does not probe a running VM, use credentials, execute shell commands, change state, persist progress or call an external server. Decisions and reflection text live in page memory until reset/reload. It uses local CSS/JS/JSON with no third-party assets. **Never serve the repository root with a general-purpose HTTP server**: it may expose hidden Git metadata or local Terraform state. The dedicated web server only serves four allowlisted UI assets, and rejects all other paths.
+The dedicated local server **only serves `index.html`, `app.js`, `style.css`, and `missions.json`**. It enforces an exact path allowlist, rejects symlinked assets, Host/Origin mismatches, and sends CSP, anti-frame, no-sniff and no-cache headers. Never use `python3 -m http.server` from the repository root: Terraform state and Git metadata must remain private.
 
-## Missions
+## Four workspaces
 
-| # | Case | Engineering competency | Evidence type |
-|---|---|---|---|
-| 01 | VM is running but has no disk or DHCP lease | Guest-vs-host fault isolation; PCI/VirtIO | Replayed actual KVM incident |
-| 02 | QEMU is blocked by AppArmor | Fix access without disabling security | Replayed actual KVM incident |
-| 03 | VPC tag modified outside Terraform | Detect, scope and repair drift | Script-backed local Floci drill |
-| 04 | Green Floci CI vs real AWS | Distinguish mocks, API emulator, real cloud | Source-based design |
-| 05 | Private EC2 missing SSM path | Identity vs network reachability | Unimplemented architecture exercise |
-| 06 | Booted guest vs ready application | Independent SSH, cloud-init, systemd, HTTP proof | Verified guest/host outputs |
-| 07 | CI jobs fail despite working KVM | CI layer triage and honest evidence claims | Replayed formatting incident |
+### 01 — System Map: see the real architecture
 
-**How to learn rather than memorize:** For each question, state a hypothesis aloud before selecting an answer; compare your prediction with the stored evidence; inspect the linked exact source file; write a *fresh explanation* in the debrief without copying the provided text. Try again later and explain the wrong choices too. An earned point is not a substitute for explanation.
+Click any node to see what Terraform declares, its value, the exact source module and the implication of that choice. The VPC is `10.42.0.0/16`; the Floci subnets are `10.42.0.0/24`, `10.42.1.0/24`, `10.42.10.0/24`, `10.42.11.0/24`. Public route tables point to the IGW; private route tables have no default route. The instance security group has **zero ingress** and only intra-VPC TCP 443 egress. The instance IAM profile has the SSM agent policy, but compute is disabled by default.
 
-## Read-only host security preflight
+**Try:** Click the private subnet, then the security group, then the IAM profile. Explain why 'private', 'authorized to use SSM' and 'able to reach SSM' are three separate properties.
 
-From the repository root, check relevant local listeners and verify that the UI server does not serve repository metadata or local state:
+### 02 — Design Sandbox: explore changes before making them
+
+Change toggles for private EC2, *proposed/not-yet-implemented* SSM interface endpoints, hypothetical NAT, public IP, and worldwide SSH ingress. The what-if analysis updates immediately and explains the missing routes, policy clashes and security risks.
+
+**Important:** The change list is **a browser teaching model, not `terraform plan` output**. Changes are not written to `.tf` files or deployed to the emulator. Some toggles intentionally describe architectural alternatives that the repo does not implement.
+
+**Try:** Enable EC2 alone. Why is the IAM SSM policy insufficient? Add the proposed endpoints. Which endpoint SG/DNS tests would be required? Add NAT only. Why does VPC-only HTTPS egress still prevent Internet HTTPS?
+
+### 03 — Run the Real Lab: make Terraform observable
+
+This tab is your guided terminal companion. Every checkpoint has a reviewed command, its effect, expected evidence, a field to paste command output and a basic marker matcher. **The reviewer has to run commands themselves**. Pasted output is kept in page memory, not sent anywhere. Markers are educational convenience checks, **not cryptographic evidence or a substitute for verifying the plan**.
+
+| Stage | Command | Changes anything? | What to observe |
+| --- | --- | --- | --- |
+| 1. Configuration | `make test` | No cloud/Docker; may initialize local providers | Mock test assertions pass |
+| 2. Emulator | `make local-up` | Starts local Floci container | API `127.0.0.1:4566` responds |
+| 3. Review | `make local-plan` | Refreshes local state, no resource apply | Inspect add/change/destroy counts |
+| 4. Local apply | `make local-apply` | **Yes — emulated AWS and local state**; confirmation required | Terraform apply complete |
+| 5. Independent evidence | `make local-verify` | Read-only local AWS API queries | VPC/subnets/SG observed |
+| 6. Drift | `make local-drift` | **Yes — local VPC Name tag**, then guarded interactive repair | Strict one-tag plan, final zero drift |
+| 7. Optional KVM | `python3 engineering-lab/probe.py` | No — read-only host observations | VM boot, Floci and guest HTTP status |
+
+The default emulator intentionally omits a privileged Docker socket mount, and does not deploy EC2. You should never add one just for the reviewer experience.
+
+#### Read-only host observation
+
+On the same Linux machine where the emulator/VM may be running:
 
 ```bash
-bash engineering-lab/security-preflight.sh
+python3 engineering-lab/probe.py
 ```
 
-This reads local socket metadata and performs loopback HTTP requests while **discarding all response bodies**. It does not use sudo, print secrets, alter firewall rules, run Docker or touch the VM. It cannot certify the host or other programs.
+Example **schema only** (values are illustrative, never live in this file):
 
-## Optional real, read-only validation on the lab owner's laptop
-
-The browser does **not** run these commands. If the local KVM VM is up and you have appropriate host access, these are representative manual checks:
-
-```bash
-virsh -c qemu:///system dominfo tfaws-lab01
-virsh -c qemu:///system domblklist tfaws-lab01 --details
-virsh -c qemu:///system net-dhcp-leases default
-terraform -chdir=environments/libvirt plan -input=false
+```json
+{
+  "schema": 1,
+  "source": "local-readonly-probe",
+  "observed_at": "2026-11-25T08:00:00+00:00",
+  "floci": "up",
+  "vm": "running",
+  "health": "healthy",
+  "vm_ip": "192.168.122.230"
+}
 ```
 
-Do **not** copy the owner's IP address into someone else's environment; obtain the guest IP from their local libvirt DHCP leases. The commands above are read-only but may access local virtualization metadata or refresh Terraform state during planning; avoid using an unknown work machine or a different Terraform state. See [LOCAL_VM.md](../docs/LOCAL_VM.md) for the entire runbook.
+The probe checks only local Floci health at `127.0.0.1:4566`, `virsh` domain state for `tfaws-lab01`, an unambiguous IPv4 lease on the default `192.168.122.0/24` libvirt NAT subnet, and HTTP `/health` on the discovered guest. It neither SSHes nor uses credentials, AWS CLI, Docker, Terraform or sudo, and reports only fixed fields. In an environment with multiple leases, it refuses to guess the guest's address.
 
-For emulator drift, [scripts/drift-lab.sh](../scripts/drift-lab.sh) is a **separate, optional hands-on lab**. It makes an out-of-band change *only* against localhost Floci, requires an existing local emulated VPC, checks the planned repair scope and asks for explicit approval before restoring. Do not substitute a real AWS endpoint.
+**Security boundary:** This is a *read-only local observation tool*, not an attestation system and not a proof that an API from another machine is the intended VM. The browser only processes JSON that the reviewer explicitly pastes. It does not inspect or contact the host automatically.
 
-## Evidence discipline
+### 04 — Incident Cases: demonstrate debugging judgment
 
-The **recorded** KVM outcome (Ubuntu boot, DHCP, SSH, `cloud-init status: done`, `lab-health.service: active`, guest/host `/health`, Terraform `No changes`) was observed on the original laptop. A new reviewer has not recreated that runtime simply by completing this browser exercise. Similarly, a passing Floci integration test does not prove production AWS network isolation, SSM connectivity, IAM enforcement or operating cost.
+Seven real-incident replays and source-based design exercises, with three decisions each (21 in total):
 
-## Learning acceptance criteria
+- Running KVM without a visible root disk: guest console → VirtIO PCI diagnostics → host-specific narrow remedy
+- AppArmor blocks QEMU backing storage and seed ISO
+- Terraform drift outside state and constrained repair
+- Emulator/CI evidence vs actual AWS guarantees
+- Missing network path to private SSM services
+- Ubuntu boot → cloud-init → systemd → host-to-guest HTTP evidence
+- Terraform formatting gate fails even though VM runtime works
 
-A reviewer can (1) run this without accounts or elevated privileges; (2) finish all 21 decision branches; (3) see why a chosen answer is right or wrong; (4) inspect direct links to actual repository evidence; (5) record and copy an independent incident explanation; (6) reset and replay scenarios safely; and (7) identify the border between emulation and verified runtime.
+Review each decision and then write your own postmortem before copying your notes. Reviewers are supposed to explain what they would *observe next*, not just get 21/21 points.
 
-Automated content contract: `python3 -m unittest discover -s engineering-lab -p 'test_*.py'`. Static tests do not prove browser accessibility or live KVM behavior. The branch must receive a human browser walkthrough before it is considered fully accepted.
+## A genuinely useful 10-minute interview walkthrough
 
-## An interviewer-ready five-minute demonstration
+1. **Architecture (2m):** Click private subnet, SG, IAM. Explain CIDR, routing, authorization and connection.
+2. **What-if (2m):** Enable EC2 with no endpoints; articulate why SSM cannot connect; test public SSH and reject the proposed exposure.
+3. **Real evidence (4m):** Run local tests, emulator/API queries if available, or a read-only VM probe. Explain every shell command and what each output does *not* establish.
+4. **Fault review (2m):** Open the missing `/dev/vda` incident and justify the debugging order with evidence.
 
-Open Mission 01. Explain why **running != booted**, read the initramfs evidence, identify the missing `vda` device, reject the incorrect label or DHCP fix, and describe the narrow `q35 → pc` mitigation **only for this host**, with independent proof. Then switch to Mission 04 and explain precisely what an emulator does not prove. Finally, read the source files, show the CI workflow, and answer without looking at the multiple-choice options:
+If your reviewer does not have Docker or KVM, steps 1, 2 and 4 still work fully offline; the real-command workspace is optional and clearly separated.
 
-> If the VM is green, but `/health` fails from the host, which three observations would you gather before changing Terraform, and why?
+## Safety, testing and scope
 
-That final open-ended explanation is the point: **engineering judgment, not memorizing a button.**
+- The browser has no execution endpoint, uses no Docker socket and no AWS credentials. It only fetches the bundled `missions.json`.
+- Keep the local UI bound to `127.0.0.1`. The backend serves an exact static allowlist, not the repository root.
+- Do not run the real AWS guard/plan/apply from the demo UI. Those operations are deliberately excluded.
+- Real lab commands may modify *only the user's local emulator and state* as documented. They are never triggered automatically.
+- For a conservative safety check: `bash engineering-lab/security-preflight.sh`.
+- Tests: `python3 -m unittest discover -s engineering-lab -p 'test_*.py' -v`.
+- CI ensures source/fixture contracts and local HTTP security regressions, but **does not prove actual KVM guest boot on a reviewer machine**.
+- The original source-level risk report lives at [SECURITY_AUDIT_2026-11-24.md](../docs/SECURITY_AUDIT_2026-11-24.md).
+
+**Completion is not a green GitHub badge alone:** have at least one reviewer launch the workbench, understand the architecture, run a terminal checkpoint in a disposable emulator, identify a broken design, explain it, and observe why the correct mitigation would work.
