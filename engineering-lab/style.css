@@ -126,3 +126,11 @@ textarea{border:1px solid #c8d2c8;border-radius:0;background:#fffefa;padding:13p
 .step-feedback.pass{color:var(--green)}
 @media(max-width:850px){.explainer-steps{grid-template-columns:repeat(2,1fr)}.practice-presets,.real-intro-cards{grid-template-columns:1fr}}
 @media(max-width:460px){.explainer-steps{grid-template-columns:1fr}.practice-picker{padding:17px}}
+
+/* Real-lab preflight is distinct from the hypothetical design controls. */
+.doctor-box{background:#f0f4eb;border:1px solid #b6cdbd;border-left:5px solid var(--green);padding:20px 23px;margin-bottom:18px}
+.doctor-box strong{font:700 11px var(--mono);color:var(--darkgreen)}
+.doctor-box p{font-size:13px;color:var(--ink2);margin:9px 0 0}
+.doctor-command{display:flex;gap:15px;align-items:center;justify-content:space-between;margin-top:17px;padding:12px 15px;background:#fff;border:1px solid #cbd8cd}
+.doctor-command code{font:12px var(--mono);overflow-wrap:anywhere}
+@media(max-width:600px){.doctor-command{align-items:stretch;flex-direction:column}}
