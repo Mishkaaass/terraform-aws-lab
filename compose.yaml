@@ -1,6 +1,8 @@
 services:
   floci:
-    image: floci/floci:latest  # Pin digest for long-lived CI releases.
+    # Floci 2.5.0, multi-arch OCI index; immutable digest from official Docker Hub.
+    # Avoid :latest drift between CI runs and first-time reviewers.
+    image: floci/floci:2.5.0@sha256:a0fbf944d7f338cc0856f1ef83831ea749ff2be71956eb7a7fce08fc21458e19
     ports:
       - "127.0.0.1:4566:4566"
     environment:
