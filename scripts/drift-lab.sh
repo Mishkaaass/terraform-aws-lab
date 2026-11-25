@@ -9,16 +9,9 @@ ENDPOINT="http://127.0.0.1:4566"
 EXPECTED_TAG="terraform-aws-lab-vpc"
 DRIFT_TAG="terraform-aws-lab-out-of-band"
 
-# Prefer the locally installed pinned Terraform without modifying global PATH.
-if [[ -f .terraform-version ]]; then
-  TF_VERSION="$(cat .terraform-version)"
-  PINNED_TF="$HOME/.local/opt/terraform/$TF_VERSION/terraform"
-  if [[ -x "$PINNED_TF" ]]; then
-    export PATH="$(dirname "$PINNED_TF"):$PATH"
-  fi
-fi
-
-for binary in terraform aws python3; do
+# Select the project's compatible Terraform version without changing PATH.
+bash scripts/terraform.sh version -json >/dev/null
+for binary in aws python3; do
   command -v "$binary" >/dev/null 2>&1 || {
     echo "[BLOCK] Missing executable: $binary" >&2
     exit 1
@@ -34,7 +27,7 @@ export AWS_EC2_METADATA_DISABLED=true
 unset AWS_PROFILE AWS_ENDPOINT_URL AWS_SESSION_TOKEN AWS_ROLE_ARN AWS_WEB_IDENTITY_TOKEN_FILE || true
 
 AWS=(aws --endpoint-url "$ENDPOINT" --region us-east-1)
-TF=(terraform -chdir=environments/floci)
+TF=(bash scripts/terraform.sh -chdir=environments/floci)
 
 printf '===== 1. LOCAL-ONLY PREFLIGHT =====\n'
 bash scripts/wait-floci.sh
