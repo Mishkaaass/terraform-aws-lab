@@ -13,7 +13,7 @@ cd terraform-aws-lab
 make studio
 ```
 
-Open **http://127.0.0.1:8765/**. Keep the terminal running; stop with `Ctrl+C`. If the server is already running, just open the URL.
+Open **http://127.0.0.1:8765/**. Keep the terminal running; stop with `Ctrl+C`. Re-running `make studio` recognizes an existing healthy Studio and displays the URL instead of failing. If an unrelated app occupies the port, the command explains how to choose another port.
 
 **First visit — follow the tabs in order:**
 
