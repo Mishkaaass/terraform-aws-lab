@@ -143,7 +143,7 @@
     for(const [mark,desc] of changes){const x=el("div","plan-item");x.append(el("b","",mark),el("span","",desc));list.append(x);}
     const warnings=$("plan-analysis");clear(warnings);
     issues.forEach(i=>{const x=el("div","analysis-item"+(i.level==="critical"?" critical":""));x.append(el("strong","",i.title),el("p","",i.body));warnings.append(x)});
-    const lines=["# Educational approximation only — NOT Terraform output","# Base values come from environments/floci and modules/*","enable_compute = "+c.compute,"# proposed.private_ssm_endpoints = "+c.ssm,"# proposed.nat_gateway = "+c.nat,"# proposed.public_ipv4 = "+c.public,"# proposed.ssh_ingress_0_0_0_0_0 = "+c.ssh,"","# Run real checks separately. The browser never writes .tf files."];
+    const lines=["EDUCATIONAL DESIGN LABELS — NOT TERMINAL COMMANDS","Private EC2 instance: "+(c.compute?"proposed ON":"OFF by default"),"Private SSM endpoints: "+(c.ssm?"proposed; not built":"not present"),"NAT gateway: "+(c.nat?"proposed; not built":"not present"),"Public instance IP: "+(c.public?"hypothetical; violates baseline":"disabled"),"Inbound SSH from the internet: "+(c.ssh?"hypothetical; insecure":"blocked"),"These switches never modify the Terraform files or Floci."];
     $("plan-code").textContent=lines.join("\n");
   }
 
@@ -310,7 +310,10 @@
       for(const m of data.missions)if(m.phases.length!==3||m.phases.some(p=>p.choices.length!==3||![0,1,2].includes(p.answer)))throw Error("Invalid decision data");
       st.missions=data;
       document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.tab)));
-      document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>tab(b.dataset.go)));
+      document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{
+        tab(b.dataset.go);
+        document.querySelector(".tabs").scrollIntoView({block:"start",behavior:"smooth"});
+      }));
       document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>selectPreset(b.dataset.preset)));
       document.querySelectorAll(".switch-row input").forEach(b=>b.addEventListener("change",()=>{
         st.config[b.id.slice(4)]=b.checked;st.preset=null;renderDesign();
