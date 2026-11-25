@@ -11,3 +11,23 @@ services:
     security_opt:
       - no-new-privileges:true
     # Do NOT mount docker.sock. EC2 is plan-tested via mocked provider by default.
+
+  # Optional browser-only teaching UI. Not started by normal 'docker compose up'.
+  # The image contains only five allowlisted UI files (never Terraform state).
+  studio:
+    profiles: ["studio"]
+    build:
+      context: .
+      dockerfile: docker/studio.Dockerfile
+    ports:
+      - "127.0.0.1:8765:8765"
+    read_only: true
+    user: "65532:65532"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp
+    restart: "no"
