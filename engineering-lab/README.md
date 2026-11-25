@@ -1,11 +1,25 @@
 # Infrastructure Studio — the guided learning interface
 
-**Goal:** understand a Terraform/AWS-style infrastructure design, experiment safely, then verify an actual local emulator. Start with **Python 3 only**:
+**Goal:** understand a Terraform/AWS-style infrastructure design, experiment safely, then verify an actual local emulator.
+
+**Preferred — Python 3.11+ in an isolated `.venv`** (no external Python dependencies):
 
 ```bash
 cd terraform-aws-lab
+make requirements
+make setup
 make studio
 ```
+
+`make studio` uses `.venv/bin/python` and will create the environment on first run. `requirements.txt` intentionally contains **no third-party packages**; everything in the server and probe uses the standard library. Do not use `sudo pip`.
+
+**Alternative — identical browser UI in an isolated Docker image** (Docker Compose needed, `.venv` not needed):
+
+```bash
+make studio-docker
+```
+
+Use **only one** mode at a time because both use port 8765. The Docker image includes only the UI and never runs the Floci/AWS lab. See [RUN REQUIREMENTS](../docs/REQUIREMENTS.md) for the exact difference between optional Terraform/Docker/AWS tools and Python packages.
 
 Open **http://127.0.0.1:8765/**. Stop with `Ctrl+C`. If the address is already in use, open the existing server instead of starting another.
 
