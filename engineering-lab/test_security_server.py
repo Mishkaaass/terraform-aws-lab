@@ -6,11 +6,14 @@ Loopback-only ephemeral port, no user state, no AWS/Docker/libvirt commands.
 from __future__ import annotations
 
 import http.client
+import io
+from contextlib import redirect_stdout, redirect_stderr
+from unittest.mock import patch
 import threading
 import unittest
-from http.server import ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from serve import LabHandler, PUBLIC_FILES
+from serve import LabHandler, PUBLIC_FILES, main
 
 
 class StaticServerSecurity(unittest.TestCase):
@@ -62,6 +65,40 @@ class StaticServerSecurity(unittest.TestCase):
     def test_dns_rebinding_and_cross_origin_are_blocked(self) -> None:
         self.assertEqual(self.request("GET", "/", {"Host": "attacker.invalid"})[0], 400)
         self.assertEqual(self.request("GET", "/", {"Origin": "https://attacker.invalid"})[0], 403)
+
+    def test_repeated_studio_start_reuses_existing_healthy_server(self) -> None:
+        capture = io.StringIO()
+        with patch("sys.argv", ["serve.py", "--port", str(self.port)]):
+            with redirect_stdout(capture):
+                result = main()
+        self.assertEqual(result, 0)
+        self.assertIn("[REUSE] Infrastructure Studio already running", capture.getvalue())
+        self.assertEqual(self.request("GET", "/")[0], 200)
+
+    def test_busy_port_with_unrelated_service_is_blocked(self) -> None:
+        class UnrelatedHandler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"Unrelated local service")
+
+            def log_message(self, fmt: str, *args: object) -> None:
+                pass
+
+        unrelated = ThreadingHTTPServer(("127.0.0.1", 0), UnrelatedHandler)
+        worker = threading.Thread(target=unrelated.serve_forever, daemon=True)
+        worker.start()
+        try:
+            with patch("sys.argv", ["serve.py", "--port", str(unrelated.server_address[1])]):
+                with redirect_stderr(io.StringIO()) as output:
+                    with self.assertRaises(SystemExit) as err:
+                        main()
+            self.assertEqual(err.exception.code, 1)
+            self.assertIn("used by another service", output.getvalue())
+        finally:
+            unrelated.shutdown()
+            unrelated.server_close()
+            worker.join(timeout=5)
 
     def test_read_only_methods_and_no_cache(self) -> None:
         status, headers, _ = self.request("GET", "/missions.json")
