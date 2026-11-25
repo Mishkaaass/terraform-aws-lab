@@ -52,10 +52,26 @@
     </section>
 
     <section class="workview" id="view-design" role="tabpanel" aria-labelledby="tab-design" hidden>
-      <div class="section-heading"><div><div class="eyebrow">02 / INTERACTIVE DESIGN SANDBOX</div><h2>Make a change. Read the consequences.</h2><p>Toggle architectural decisions, inspect a simulated plan, then explain whether you would approve it.</p></div><span class="side-stamp">SIMULATION ONLY · ZERO MUTATIONS</span></div>
+      <div class="section-heading"><div><div class="eyebrow">02 / INTERACTIVE DESIGN SANDBOX</div><h2>Try a decision. See why it matters.</h2><p>This is a safe <strong>what-if game</strong>: pick a scenario below, see the switches change, then read the diagnosis on the right. You are not editing Terraform.</p></div><span class="side-stamp">SIMULATION ONLY · ZERO MUTATIONS</span></div>
+      <section class="explainer-strip" aria-label="How to use the Design Sandbox">
+        <strong>HOW TO USE THIS PAGE</strong>
+        <div class="explainer-steps">
+          <span><b>1</b> Pick an example</span><span><b>2</b> Predict what will happen</span><span><b>3</b> Read the result on the right</span><span><b>4</b> Try your own switches</span>
+        </div>
+        <p><b>Example:</b> Does giving a server an IAM role mean it can reach AWS SSM? Try the first example to find out.</p>
+      </section>
+      <section class="practice-picker" aria-label="Start with a practical example">
+        <div><span class="eyebrow">START HERE · ONE CLICK</span><h3>Choose a real engineering problem</h3><p>You do not need to understand the switches yet. Pick one example and the page sets them for you. Your job is to explain the result.</p></div>
+        <div class="practice-presets">
+          <button type="button" class="practice-preset" data-preset="isolated" aria-pressed="false"><span>EXAMPLE 1 · START HERE</span><strong>Why can't my EC2 use SSM?</strong><small>Enable a private server without endpoints</small></button>
+          <button type="button" class="practice-preset" data-preset="endpoints" aria-pressed="false"><span>EXAMPLE 2 · IMPROVE IT</span><strong>Manage EC2 privately</strong><small>Propose private SSM network access</small></button>
+          <button type="button" class="practice-preset" data-preset="exposed" aria-pressed="false"><span>EXAMPLE 3 · SECURITY</span><strong>What if I open SSH?</strong><small>See why public access is risky</small></button>
+        </div>
+        <div id="design-lesson" class="practice-lesson" aria-live="polite">Select <strong>Example 1</strong> to begin. We'll explain what each switch means.</div>
+      </section>
       <div class="design-layout">
-        <div class="control-panel"><div class="control-header"><span>DESIRED CONFIGURATION</span><button class="reset-link" id="design-reset" type="button">RESET TO REPO ↺</button></div>
-          <div class="control-intro"><strong>Starting from the repository defaults</strong><p>One VPC · four subnets · no NAT · no EC2 · no inbound rules.</p></div>
+        <div class="control-panel"><div class="control-header"><span>YOUR DESIGN OPTIONS · BROWSER ONLY</span><button class="reset-link" id="design-reset" type="button">RESET TO REPO ↺</button></div>
+          <div class="control-intro"><strong>These switches are architectural choices</strong><p>EC2 = virtual server · SSM = remote administration without SSH · NAT = outbound internet route · SG = traffic firewall.</p><p>Start with an example above. Later, experiment here.</p></div>
           <div class="switch-list">
             <label class="switch-row"><span><strong>Enable private EC2</strong><small>Existing optional Terraform variable · preview only</small></span><input type="checkbox" id="cfg-compute"><span class="switch-ui"></span></label>
             <label class="switch-row"><span><strong>Add private SSM endpoints</strong><small>Proposed architecture — not in repository yet</small></span><input type="checkbox" id="cfg-ssm"><span class="switch-ui"></span></label>
@@ -65,10 +81,10 @@
           </div>
           <div class="safety-inline">All switches change this browser's model only. The real Terraform configuration, Docker, VM and AWS remain untouched.</div>
         </div>
-        <div class="result-panel"><div class="result-header"><span>PLAN PREVIEW</span><span id="plan-count" class="count-chip">NO PROPOSED CHANGES</span></div>
-          <div class="result-body"><div id="plan-verdict" class="verdict"></div><h3>What would change?</h3><div id="plan-changes" class="plan-list"></div><h3>Engineering review</h3><div id="plan-analysis" class="analysis-list"></div>
-            <div class="code-heading"><span>SIMULATED CHANGESET / NOT A REAL TERRAFORM PLAN</span></div><pre id="plan-code" class="code-preview"></pre>
-            <div class="review-prompt"><label for="decision-note">Explain the risks and proof you would demand before apply:</label><textarea id="decision-note" rows="3" placeholder="The route is missing because... The security boundary... My proof would be..."></textarea><button type="button" class="outline-btn" id="copy-decision">COPY MY REVIEW NOTES</button><span id="decision-copy-status" role="status" class="micro-message"></span></div>
+        <div class="result-panel"><div class="result-header"><span>WHAT-IF RESULTS · SIMULATION, NOT TERRAFORM PLAN</span><span id="plan-count" class="count-chip">NO PROPOSED CHANGES</span></div>
+          <div class="result-body"><div class="result-guide"><strong>READ THIS SIDE AFTER CHOOSING</strong><p>Does the design work? What is missing? Would you approve the change? None of this is deployed.</p></div><div id="plan-verdict" class="verdict" aria-live="polite"></div><h3>What did your choices propose?</h3><div id="plan-changes" class="plan-list"></div><h3>What should you learn from this?</h3><div id="plan-analysis" class="analysis-list"></div>
+            <details class="advanced-code"><summary>Curious? View the simulated values (advanced)</summary><p>These values are a teaching illustration, not a real plan or Terraform configuration file.</p><pre id="plan-code" class="code-preview"></pre></details>
+            <div class="review-prompt"><label for="decision-note">Can you explain the result in one sentence? What would you check before approving the design?</label><textarea id="decision-note" rows="3" placeholder="The route is missing because... The security boundary... My proof would be..."></textarea><button type="button" class="outline-btn" id="copy-decision">COPY MY REVIEW NOTES</button><span id="decision-copy-status" role="status" class="micro-message"></span></div>
           </div>
         </div>
       </div>
@@ -76,13 +92,31 @@
     </section>
 
     <section class="workview" id="view-real" role="tabpanel" aria-labelledby="tab-real" hidden>
-      <div class="section-heading"><div><div class="eyebrow">03 / ACTUAL LOCAL INFRASTRUCTURE</div><h2>Go beyond the mock. Run the real flow.</h2><p>Execute reviewed commands <em>yourself</em> in a terminal, paste the result, and watch the evidence board update. Nothing executes through the browser.</p></div><span class="side-stamp">LOCAL FLOCI / OPTIONAL KVM</span></div>
-      <div class="live-layout"><div>
-        <div class="safety-banner"><strong>SAFETY BOUNDARY</strong><p>Mock tests need no Docker. Floci stages start containers and provision resources only in a local emulator. Drift deliberately mutates a VPC tag. Review each command before executing. Never supply real AWS credentials.</p></div>
-        <div class="checkpoint-grid"><div class="checkpoint-header"><span>HANDS-ON CHECKPOINTS</span><strong id="checkpoint-progress">0 / 7 VERIFIED</strong></div><div id="checkpoint-nav" class="checkpoint-nav"></div></div>
-        <article class="step-card"><div class="step-meta"><span id="step-number"></span><span id="step-risk"></span></div><h3 id="step-title"></h3><p id="step-explain"></p><div class="command-box"><div class="command-top"><span>RUN MANUALLY · REPOSITORY ROOT</span><button id="copy-command" type="button">COPY COMMAND</button></div><pre id="step-command"></pre></div><label class="field-label" for="step-output">Paste the actual terminal output below to check it:</label><textarea id="step-output" rows="6" placeholder="Paste the result here. This stays in your browser; it is not uploaded."></textarea><div class="step-actions"><button class="solid-btn" id="verify-step" type="button">VALIDATE MY OUTPUT →</button><span id="step-result" role="status"></span></div><p id="step-proof" class="micro-note"></p></article>
+      <div class="section-heading"><div><div class="eyebrow">03 / ACTUAL LOCAL INFRASTRUCTURE</div><h2>Build it yourself, one small step at a time.</h2><p>This is your <strong>terminal guide</strong> for a real local AWS emulator. It does <strong>not</strong> run commands for you. Copy a command, run it in your own terminal, and inspect what happened.</p></div><span class="side-stamp">LOCAL FLOCI / OPTIONAL KVM</span></div>
+      <section class="explainer-strip" aria-label="How the real lab works">
+        <strong>YOUR 4-STEP WORKFLOW</strong>
+        <div class="explainer-steps">
+          <span><b>1</b> Open a second terminal</span><span><b>2</b> Copy one command below</span><span><b>3</b> Run it and read the output</span><span><b>4</b> Paste the output and check</span>
+        </div>
+        <p>Open the terminal in <code>~/projects/terraform-aws-lab</code> or in the folder where you cloned this repository. Keep this browser page open beside it.</p>
+      </section>
+      <div class="real-intro-cards">
+        <article><span>NEW TO THESE TOOLS?</span><strong>Start with checkpoint 1</strong><p>Terraform tests the intended design. No Docker or AWS account required.</p></article>
+        <article><span>WANT TO SEE RESOURCES?</span><strong>Try checkpoints 2–5</strong><p>Floci pretends to be AWS locally. You can inspect real emulated VPC and subnet resources.</p></article>
+        <article><span>READY FOR A CHALLENGE?</span><strong>Try checkpoint 6</strong><p>Deliberately change a local VPC tag, detect the drift, then approve a guarded repair.</p></article>
       </div>
-      <aside class="evidence-board"><div class="board-head"><span>LIVE EVIDENCE · FROM YOUR MACHINE</span><span class="board-dot"></span></div><h3>Connect observations, not permissions.</h3><p>Run the optional read-only probe and paste its small JSON output. The browser does not connect to Docker or the VM.</p><div class="command-box compact"><div class="command-top"><span>READ-ONLY PROBE</span><button id="copy-probe" type="button">COPY</button></div><pre id="probe-command">python3 engineering-lab/probe.py</pre></div><label for="probe-input" class="field-label">Paste probe JSON (no credentials):</label><textarea id="probe-input" rows="7" placeholder='{"schema":1,"source":"local-readonly-probe",...}'></textarea><button class="outline-btn full" type="button" id="inspect-probe">INSPECT EVIDENCE →</button><div id="probe-message" class="micro-message" role="status"></div><div class="signal-rows"><div><span>FLOCI API</span><strong id="signal-floci">NOT INSPECTED</strong></div><div><span>KVM GUEST</span><strong id="signal-kvm">NOT INSPECTED</strong></div><div><span>GUEST HTTP /health</span><strong id="signal-health">NOT INSPECTED</strong></div><div><span>OBSERVED AT</span><strong id="signal-at">—</strong></div></div><p class="probe-limits">These are manually supplied local observations. They do not prove production AWS security, and cannot be independently authenticated by a browser-only page.</p></aside></div>
+      <div class="live-layout"><div>
+        <div class="safety-banner"><strong>BEFORE YOU START</strong><p>Only checkpoint 1 needs Terraform. Steps 2–6 require Docker, and steps 5–6 also need AWS CLI. Checkpoint 7 is an optional read-only check for a locally installed KVM VM. <strong>Apply and drift change the local emulator and Terraform state.</strong> Use a personal test environment, read the plan and never paste passwords, tokens or private keys.</p></div>
+        <div class="checkpoint-grid"><div class="checkpoint-header"><span>HANDS-ON CHECKPOINTS</span><strong id="checkpoint-progress">0 / 7 OUTPUT MARKERS MATCHED</strong></div><div id="checkpoint-nav" class="checkpoint-nav"></div></div>
+        <article class="step-card"><div class="step-meta"><span id="step-number"></span><span id="step-risk"></span></div><h3 id="step-title"></h3><p id="step-explain"></p>
+          <div class="step-explained">
+            <div><span>WHY AM I DOING THIS?</span><p id="step-purpose"></p></div>
+            <div><span>WHAT WILL THIS COMMAND CHANGE?</span><p id="step-impact"></p></div>
+            <div><span>WHAT SUCCESS SHOULD LOOK LIKE</span><p id="step-expected"></p></div>
+          </div>
+          <div class="command-box"><div class="command-top"><span>RUN MANUALLY · REPOSITORY ROOT</span><button id="copy-command" type="button">COPY COMMAND</button></div><pre id="step-command"></pre></div><label class="field-label" for="step-output">Paste the actual terminal output below to check it:</label><textarea id="step-output" rows="6" placeholder="Paste the result here. This stays in your browser; it is not uploaded."></textarea><div class="step-actions"><button class="solid-btn" id="verify-step" type="button">CHECK OUTPUT TEXT →</button><button class="outline-btn" id="next-checkpoint" type="button">NEXT CHECKPOINT →</button></div><div id="step-result" role="status" class="step-feedback"></div><p class="micro-note">This only looks for expected text in what you pasted. It cannot verify who ran a command or guarantee a secure result. Review the actual output yourself.</p><p id="step-proof" class="micro-note"></p></article>
+      </div>
+      <aside class="evidence-board"><div class="board-head"><span>OPTIONAL · READ-ONLY MACHINE SNAPSHOT</span><span class="board-dot"></span></div><h3>See what is actually running locally</h3><p>This is separate from the seven checkpoints. In your second terminal, run the probe below. Copy only its small JSON result into the box and click <strong>Inspect evidence</strong>. You will see whether Floci responds and, if installed, whether the Ubuntu VM and its health endpoint respond.</p><div class="command-box compact"><div class="command-top"><span>READ-ONLY PROBE</span><button id="copy-probe" type="button">COPY</button></div><pre id="probe-command">python3 engineering-lab/probe.py</pre></div><label for="probe-input" class="field-label">Step 2: Paste the JSON that starts with <code>{"schema":1,...}</code> (never secrets):</label><textarea id="probe-input" rows="7" placeholder='{"schema":1,"source":"local-readonly-probe",...}'></textarea><button class="outline-btn full" type="button" id="inspect-probe">STEP 3 · SHOW LOCAL STATUS →</button><div id="probe-message" class="micro-message" role="status"></div><div class="signal-rows"><div><span>FLOCI API</span><strong id="signal-floci">NOT INSPECTED</strong></div><div><span>KVM GUEST</span><strong id="signal-kvm">NOT INSPECTED</strong></div><div><span>GUEST HTTP /health</span><strong id="signal-health">NOT INSPECTED</strong></div><div><span>OBSERVED AT</span><strong id="signal-at">—</strong></div></div><p class="probe-limits">No automatic connection or data upload. If you have no KVM VM, an UNKNOWN status is normal. Pasted JSON is not independently authenticated and never proves real AWS behavior.</p></aside></div>
       <div class="next-cta"><div><small>GO DEEPER</small><strong>Once a system works, can you diagnose why it stops working?</strong></div><button type="button" class="solid-btn" data-go="cases">OPEN INCIDENT DRILLS →</button></div>
     </section>
 
