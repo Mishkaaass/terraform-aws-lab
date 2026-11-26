@@ -52,6 +52,12 @@ jobs:
           .venv/bin/python -m unittest discover -s scripts -p 'test_*.py' -v
           bash -n scripts/setup-trivy.sh scripts/smoke-studio-image.sh
           sh -n scripts/scan-image.sh
+      - name: Preflight exact committed source bundle and checksum
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/package-release.py "$GITHUB_SHA" "$RUNNER_TEMP/delivery-preflight"
+          (cd "$RUNNER_TEMP/delivery-preflight" && sha256sum -c SHA256SUMS)
 
   studio-container:
     name: Studio Docker reproducibility / static security smoke

@@ -6,7 +6,7 @@ The same six required CI job names remain protected. They cover Terraform format
 
 1. CD accepts only a successful main-push CI from this repository. It checks all six jobs of the triggering attempt and the exact current main commit.
 2. The pinned Buildx action creates an **amd64** Studio image with SBOM and provenance in GHCR. A uniquely named candidate tag is not a verified release.
-3. Trivy checks the exact registry digest: all CRITICAL findings and fixable HIGH findings block; unfixed HIGH findings are reported and require review. Scanner failures block.
+3. Trivy checks the exact registry digest: all CRITICAL findings and fixable HIGH findings block; unfixed HIGH findings are reported and require review. Scanner failures block. The previous Bookworm base failed this new gate on critical SQLite/zlib findings; the Studio now uses the reviewed OpsBoard Python digest with OS security upgrades and removes unused pip from the runtime. The build remains standard-library only.
 4. A fresh non-root, read-only container with no network, host mounts or published ports tests the static HTTP allowlist and security headers. The source revision label must match the tested commit.
 5. CD rechecks main, promotes the verified digest to `sha-<commit>` and `latest`, and uploads the reviewed source archive, SHA256SUMS and delivery.json for 30 days.
 

@@ -36,6 +36,7 @@ jobs:
           set -Eeuo pipefail
           [[ "$TESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$CI_RUN" =~ ^[0-9]+$ && "$CI_ATTEMPT" =~ ^[0-9]+$ ]]
+          test "$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.protected')" = true
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$TESTED_SHA"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN/attempts/$CI_ATTEMPT/jobs?per_page=100" > "$RUNNER_TEMP/ci-jobs.json"
           python3 - "$RUNNER_TEMP/ci-jobs.json" <<'PY'
@@ -112,11 +113,12 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.protected')" = true
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$TESTED_SHA"
           docker buildx imagetools create --prefer-index=false \
             --tag "$NAME:sha-$TESTED_SHA" --tag "$NAME:latest" "$IMAGE"
           for tag in "$NAME:sha-$TESTED_SHA" "$NAME:latest"; do
-            docker buildx imagetools inspect "$tag" | grep -Fx "Digest:    ${IMAGE##*@}"
+            test "$(docker buildx imagetools inspect "$tag" --format '{{.Manifest.Digest}}')" = "${IMAGE##*@}"
           done
       - name: Write verified delivery evidence
         env:
