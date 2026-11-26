@@ -16,6 +16,18 @@ Explore the architecture in the browser, experiment with design decisions, and v
 
 ## Start in 60 seconds — choose one
 
+| Your OS | Browser Studio | Real local Terraform / Floci lab |
+| --- | --- | --- |
+| **Linux** | Native Python or Docker | Native Ubuntu/Linux (CI reference) |
+| **Windows** | Ubuntu WSL 2 or Docker Desktop | Ubuntu WSL 2 + Docker Desktop integration |
+| **macOS** | Native Python or Docker Desktop (Intel / Apple silicon) | Optional native CLI route; Ubuntu fallback |
+
+The optional real Linux VM lab uses KVM/libvirt on a suitable Linux host, not native Windows/macOS virtualization. Linux CI verifies the reference runtime; Windows/macOS and every CPU combination have not been independently runtime-certified.
+
+## Linux — native Ubuntu / Debian
+
+[Linux prerequisites and installation guide](docs/linux.md).
+
 **Recommended: project-local Python `.venv`.** Requirements: Python **3.11+** with `venv` support, Git, Make and a browser. **No AWS account, Docker or Python package downloads needed** to explore.
 
 ```bash
@@ -35,6 +47,50 @@ make studio-docker      # same UI, isolated image; no .venv required
 ```
 
 Both serve on **127.0.0.1:8765**; run only one at a time. The Docker image contains only public UI assets, with no repository state or credentials. It does **not** run Terraform or Floci automatically. For a beginner-friendly comparison and OS-specific prerequisites, see **[RUN REQUIREMENTS](docs/REQUIREMENTS.md)**.
+
+## Windows — Ubuntu WSL 2 + Docker Desktop
+
+Install [Ubuntu WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) and open Ubuntu once to create your non-root Linux user. In PowerShell, check `wsl -l -v` shows version 2 for Ubuntu. In the **Ubuntu terminal** (not PowerShell), install Python 3.11+ with venv, Git and Make, then run:
+
+```bash
+git clone https://github.com/Mishkaaass/terraform-aws-lab.git
+cd terraform-aws-lab
+make requirements
+make setup
+make studio
+```
+
+Open **http://127.0.0.1:8765/** in your Windows browser. For the real local Terraform exercises, install the version in `.terraform-version` and AWS CLI v2 inside Ubuntu. Install and start [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/) with Ubuntu WSL integration enabled, then follow the hands-on commands below **inside Ubuntu**. Keep the clone and Terraform state in the Linux filesystem.
+
+**Alternative, browser-only:** With Git and Docker Desktop already installed, use native PowerShell (no host Python required):
+
+```powershell
+git clone https://github.com/Mishkaaass/terraform-aws-lab.git
+cd terraform-aws-lab
+docker compose --profile studio up --build studio
+```
+
+Open the same URL. This starts only the Studio, not the emulator. Stop with Ctrl+C. The full VM exercise needs a separate suitable Linux KVM host.
+
+[Windows setup, CLI prerequisites and troubleshooting](docs/windows.md).
+
+## macOS — native Studio (Intel / Apple silicon)
+
+Install [Python 3.11+](https://www.python.org/downloads/) and Git / Make (Apple Command Line Tools). If Homebrew is already installed, `brew install python` is an alternative. In macOS Terminal:
+
+```bash
+git clone https://github.com/Mishkaaass/terraform-aws-lab.git
+cd terraform-aws-lab
+make requirements
+make setup
+make studio
+```
+
+Open **http://127.0.0.1:8765/**. No AWS account or Docker is needed for the Python Studio. If you prefer Docker Desktop, stop the Python server and run `make studio-docker` instead.
+
+For the optional native Terraform/Floci lab, use the pinned compatible Terraform version, AWS CLI v2, GNU Bash/coreutils and a local Docker Desktop engine as described in the [macOS runbook](docs/macos.md). Start with mock tests and a reviewed plan; use a dedicated Ubuntu VM/host if the toolchain or provider is not compatible. Do not bypass provider checksums or account guards. The separate KVM guest exercise is Linux-only.
+
+## Explore the Studio
 
 **First visit — follow the tabs in order:**
 

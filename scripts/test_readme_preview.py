@@ -52,6 +52,18 @@ class ReadmePresentationTest(unittest.TestCase):
         ):
             self.assertIn(term, readme)
 
+    def test_os_specific_quickstarts_exist(self) -> None:
+        readme = README.read_text(encoding="utf-8")
+        for heading in ("## Linux", "## Windows", "## macOS"):
+            self.assertIn(heading, readme)
+        for os_name in ("linux", "windows", "macos"):
+            path = ROOT / "docs" / (os_name + ".md")
+            self.assertTrue(path.is_file())
+            guide = path.read_text(encoding="utf-8")
+            self.assertIn("http://127.0.0.1:8765/", guide)
+            self.assertIn("make studio", guide)
+            self.assertIn("make local-plan", guide)
+
 
 if __name__ == "__main__":
     unittest.main()
