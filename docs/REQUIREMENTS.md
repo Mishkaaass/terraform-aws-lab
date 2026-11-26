@@ -11,6 +11,8 @@ Pick **one** of the two browser options; they serve the **same source assets**.
 
 **The Studio itself does not require Terraform, AWS, Docker or an AWS account.** `requirements.txt` is intentionally empty of packages because the HTTP server and probe use only Python's standard library. **Python virtual environments manage Python packages, not external command-line tools** such as Terraform, Docker, AWS CLI, Git or libvirt.
 
+**Choose your operating system:** [Linux](linux.md) · [Windows / WSL 2](windows.md) · [macOS](macos.md). Linux is the CI reference environment. The Studio has a portable Python route on Linux/macOS and Docker Desktop route on Windows/macOS; the real CLI path on other hosts is subject to toolchain and architecture compatibility.
+
 ## Recommended .venv path
 
 ```bash
@@ -38,6 +40,8 @@ Open http://127.0.0.1:8765/. The Compose `studio` service is profile-gated and s
 Do not run Python-host Studio and Docker Studio simultaneously: both use host port **8765**. Stop one first; don't kill unrelated processes. Docker daemon access can be privileged on Linux — use your own trusted workstation or an isolated disposable VM; **never chmod 666** on `docker.sock`.
 
 ## Starting the real local IaC lab
+
+Use a Linux shell (native Linux or Ubuntu WSL 2), or the optional macOS CLI prerequisites in [macOS setup](macos.md). The commands below do not use a real AWS account.
 
 ```bash
 make doctor           # read-only diagnostic
