@@ -30,7 +30,8 @@ class ReadmePresentationTest(unittest.TestCase):
         readme = README.read_text(encoding="utf-8")
         self.assertIn("actions/workflows/ci.yml/badge.svg", readme)
         self.assertIn("img.shields.io/github/v/release", readme)
-        self.assertIn("CD-manual%20opt--in%20only", readme)
+        self.assertIn("actions/workflows/cd.yml/badge.svg", readme)
+        self.assertIn("AWS%20deployment-manual%20opt--in%20only", readme)
         self.assertIn("does not deploy to AWS", readme)
         self.assertIn("docs/AWS_RUNBOOK.md", readme)
 

@@ -50,6 +50,14 @@ jobs:
           bash -n scripts/setup-studio.sh scripts/requirements.sh scripts/publish-release.sh
           .venv/bin/python -m unittest discover -s engineering-lab -p 'test_*.py' -v
           .venv/bin/python -m unittest discover -s scripts -p 'test_*.py' -v
+          bash -n scripts/setup-trivy.sh scripts/smoke-studio-image.sh
+          sh -n scripts/scan-image.sh
+      - name: Preflight exact committed source bundle and checksum
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/package-release.py "$GITHUB_SHA" "$RUNNER_TEMP/delivery-preflight"
+          (cd "$RUNNER_TEMP/delivery-preflight" && sha256sum -c SHA256SUMS)
 
   studio-container:
     name: Studio Docker reproducibility / static security smoke
@@ -84,6 +92,18 @@ jobs:
           test "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/terraform.tfstate)" = 404
           test -z "$(docker compose --profile studio ps -q floci)"
           echo '[PASS] Docker Studio started without Floci and sensitive paths are blocked.'
+      - name: Set up pinned Trivy
+        run: bash scripts/setup-trivy.sh
+      - name: Gate the exact locally built Studio image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cid="$(docker compose --profile studio ps -q studio)"
+          test -n "$cid"
+          image="$(docker inspect "$cid" --format '{{.Image}}')"
+          test -n "$image"
+          sh scripts/scan-image.sh "$image"
+          bash scripts/smoke-studio-image.sh "$image"
       - name: Clean up disposable Studio
         if: ${{ always() }}
         run: docker compose --profile studio down --remove-orphans

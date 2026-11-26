@@ -23,6 +23,8 @@ The isolated private subnets have **no default route, NAT or SSM endpoints**. Th
 
 ## Release and ongoing maintenance
 
+The delivery workflow accepts only a successful main-push CI from this same repository and checks all six jobs for the triggering attempt. It uses no AWS credentials, only the scoped ephemeral GitHub token. GHCR candidate tags are unverified until the exact digest passes the same Trivy policy and isolated HTTP smoke test; only then may the verified SHA and `latest` tags be promoted. See [DELIVERY.md](DELIVERY.md).
+
 - Commit provider lockfiles for both Terraform AWS roots and review Dependabot changes in PRs.
 - Require CI checks and human review before merging when repository policy permits; branch protection settings are managed in GitHub and cannot be inferred from CI output.
 - Keep Terraform state, `*.tfvars`, secrets, personal accounts and AWS credentials out of Git.

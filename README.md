@@ -8,7 +8,7 @@ Explore the architecture in the browser, experiment with design decisions, and v
 
 *Developed by Moshe Bogo*
 
-[![CI](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml) [![CD: Manual only](https://img.shields.io/badge/CD-manual%20opt--in%20only-lightgrey)](docs/AWS_RUNBOOK.md) [![Release](https://img.shields.io/github/v/release/Mishkaaass/terraform-aws-lab)](https://github.com/Mishkaaass/terraform-aws-lab/releases/latest) [![License: MIT](https://img.shields.io/github/license/Mishkaaass/terraform-aws-lab)](LICENSE)
+[![CI](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/ci.yml) [![CD](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/cd.yml/badge.svg)](https://github.com/Mishkaaass/terraform-aws-lab/actions/workflows/cd.yml) [![AWS deployment: Manual](https://img.shields.io/badge/AWS%20deployment-manual%20opt--in%20only-lightgrey)](docs/AWS_RUNBOOK.md) [![Release](https://img.shields.io/github/v/release/Mishkaaass/terraform-aws-lab)](https://github.com/Mishkaaass/terraform-aws-lab/releases/latest) [![License: MIT](https://img.shields.io/github/license/Mishkaaass/terraform-aws-lab)](LICENSE)
 
 ![Infrastructure Studio — interactive Terraform AWS network topology and component inspector](docs/assets/infrastructure-studio-system-map.png)
 
@@ -163,6 +163,24 @@ make local-drift     # CHANGES a local VPC tag; detects, guards, repairs with co
 | `InvalidVpcID.NotFound` | Terraform state may remember a VPC that the emulator lost. **Stop**, inspect `make doctor` and a read-only plan; do not delete state or force apply. |
 | `KVM VM: shut off` | Normal for this lab. The separate Ubuntu VM is optional and independent from Floci. |
 
+## CI/CD — verified delivery without cloud deployment
+
+```mermaid
+flowchart LR
+    PR[Pull request] --> CI[Six CI quality and security gates]
+    CI --> M[Protected main]
+    M --> MC[CI on merged main]
+    MC --> CD[CD builds Studio with SBOM and provenance]
+    CD --> D[Candidate registry digest]
+    D --> S[Trivy and isolated exact-image smoke]
+    S --> V[Verified GHCR digest and source bundle]
+    V -. "manual sandbox approval only" .-> AWS[Real AWS - optional]
+```
+
+Every successful main push can trigger CD. The pipeline verifies all six jobs from the exact triggering CI attempt, builds the Studio image, scans and smoke-tests the published digest in a disposable isolated container, and promotes verified tags only after rechecking current main. The GitHub Actions delivery artifact contains the exact committed source, SHA256 checksums and delivery evidence, never untracked state or plans. A candidate tag is **not** an approved release. Stable GitHub Releases remain deliberate snapshots. See [delivery runbook](docs/DELIVERY.md) for permissions, verification and limitations.
+
+CD delivers a Studio container and an IaC source artifact; it **never applies Terraform to real AWS**. No cloud credentials are used.
+
 ## Project layout and safety
 
 ```text
@@ -172,7 +190,7 @@ environments/floci/    Local emulated AWS, isolated Terraform state
 environments/aws/      Separate guarded real-AWS sandbox (never automatic)
 environments/libvirt/  Optional independent Ubuntu/KVM VM
 scripts/               Local checks, guarded drift exercise, AWS safety checks
-.github/workflows/     CI validation, mock tests, Floci integration, Trivy, Gitleaks
+.github/workflows/     CI quality/security gates + verified Studio/IaC delivery
 docs/                  Detailed architecture, VM guide and AWS safety runbook
 ```
 

@@ -38,7 +38,8 @@ class ReviewerRuntimeContract(TestCase):
         for token in ("!.git/", "!environments/", "!reports/", "!*.tfstate"):
             self.assertNotIn(token,ignore)
         dockerfile=(ROOT/"docker/studio.Dockerfile").read_text()
-        self.assertIn("FROM python:3.14.10-slim-bookworm@sha256:",dockerfile)
+        self.assertIn("FROM python:3.14-slim@sha256:22eafb370920ad8b429e0aec3fff433e0669968519f5d60469d83729c138b28b",dockerfile)
+        self.assertIn("python -m pip uninstall --yes pip",dockerfile)
         self.assertIn("USER 65532:65532",dockerfile)
         self.assertNotIn("pip install",dockerfile)
         self.assertNotIn("COPY . ",dockerfile)
